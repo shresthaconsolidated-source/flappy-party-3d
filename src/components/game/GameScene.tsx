@@ -19,9 +19,9 @@ interface GameSceneProps {
   onScoreUpdate?: (score: number) => void;
 }
 
-const BASE_GRAVITY = -0.0012;
-const BASE_JUMP_FORCE = 0.045;
-const BASE_PIPE_SPEED = 0.02; // Bumping speed as requested
+const BASE_GRAVITY = -0.0009; // Lighter feel
+const BASE_JUMP_FORCE = 0.04; 
+const BASE_PIPE_SPEED = 0.02; 
 const BIRD_X = 0;
 
 function getDifficultyMultiplier(score: number) {
@@ -141,7 +141,7 @@ function GameLoop({ roomState, onFlap, onDie, localPlayerId, jumpTrigger, onUpda
         });
     }
 
-    // 5. Update smoothed positions for others
+    // 5. Update smoothed positions for others (Host/Spectator side)
     if (roomState) {
         Object.values(roomState.players).forEach(p => {
             if (p.id !== localPlayerId) {
@@ -149,19 +149,28 @@ function GameLoop({ roomState, onFlap, onDie, localPlayerId, jumpTrigger, onUpda
                 if (smoothedYRef.current[p.id] === undefined) {
                     smoothedYRef.current[p.id] = p.position[1];
                 }
+                // Snappier, higher-fidelity interpolation
                 smoothedYRef.current[p.id] = THREE.MathUtils.lerp(
                     smoothedYRef.current[p.id],
                     targetYRef.current[p.id],
-                    0.2 // Smoothing factor
+                    0.35 // Increased from 0.2 for better sync
                 );
             }
         });
     }
 
-    // 6. Camera Sway on Host
+    // 6. Cinematic Camera Follow (Professionally smoothed)
     if (!isPlayer && isPlaying) {
-        state.camera.position.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.2;
-        state.camera.lookAt(0, 0, 0);
+        const aliveBirds = Object.values(roomState?.players || {}).filter(p => p.isAlive);
+        if (aliveBirds.length > 0) {
+            const avgY = aliveBirds.reduce((acc, p) => acc + (p.id === localPlayerId ? positionYRef.current : (smoothedYRef.current[p.id] || 0)), 0) / aliveBirds.length;
+            const targetCamY = Math.min(Math.max(avgY * 0.5, -2), 2); // Dynamic follow with limits
+            state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, targetCamY, 0.05);
+        }
+        
+        // Subtle sway
+        state.camera.position.x = Math.sin(state.clock.elapsedTime * 0.3) * 0.1;
+        state.camera.lookAt(2, 0, 0); // Look slightly ahead for professionalism
     }
 
     // 7. Render update
