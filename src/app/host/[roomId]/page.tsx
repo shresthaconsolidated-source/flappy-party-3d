@@ -4,11 +4,11 @@ import { useGameRoom } from "@/hooks/useGameRoom";
 import { GameScene } from "@/components/game/GameScene";
 import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useState, use } from "react";
-import { Users, Trophy, Play, RefreshCcw } from "lucide-react";
+import { Users, Trophy } from "lucide-react";
 
 export default function HostPage({ params }: { params: Promise<{ roomId: string }> }) {
   const { roomId } = use(params);
-  const { roomState, startGame, restart, updatePosition } = useGameRoom(roomId);
+  const { roomState, updatePosition } = useGameRoom(roomId);
   const [origin, setOrigin] = useState("");
   const [isLocalhost, setIsLocalhost] = useState(false);
 
@@ -19,156 +19,150 @@ export default function HostPage({ params }: { params: Promise<{ roomId: string 
 
   const joinUrl = `${origin}/play/${roomId}`;
   const players = roomState ? Object.values(roomState.players) : [];
-  const alivePlayers = players.filter(p => p.isAlive);
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
   const topPlayer = sortedPlayers[0];
+  const isPlaying = roomState?.state === 'PLAYING' || roomState?.state === 'GAME_OVER';
 
   if (!roomState) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-sky-900 text-white">
-        <div className="text-2xl animate-pulse">Connecting to Room...</div>
+      <div className="flex items-center justify-center min-h-screen bg-sky-900 text-white font-sans">
+        <div className="text-2xl animate-pulse font-black uppercase tracking-widest">Initializing Room...</div>
       </div>
     );
   }
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-sky-400">
+    <div className="relative w-screen h-screen overflow-hidden bg-sky-900">
       {/* 3D View */}
       <div className="absolute inset-0">
         <GameScene roomState={roomState} onUpdatePosition={updatePosition} />
       </div>
 
       {/* Overlays */}
-      <div className="absolute inset-0 flex p-8 pointer-events-none">
+      <div className="absolute inset-0 flex p-10 pointer-events-none">
         {/* Left Side: Room Info & Players */}
-        <div className="flex flex-col w-80 space-y-6 pointer-events-auto">
-          <div className="bg-white/90 backdrop-blur-md rounded-2xl p-6 shadow-2xl border-4 border-sky-600">
-            <h1 className="text-3xl font-black text-sky-600 mb-4 tracking-tighter uppercase italic">
-              Flappy Party 3D
+        <div className="flex flex-col w-96 space-y-8 pointer-events-auto">
+          <div className="bg-white/10 backdrop-blur-3xl rounded-[3rem] p-10 shadow-2xl border border-white/20">
+            <h1 className="text-5xl font-black text-white mb-8 tracking-tighter uppercase italic leading-none">
+              Flappy <br/> Party 3D
             </h1>
-            <div className="space-y-4">
-              <div className="bg-sky-100 rounded-xl p-4 flex flex-col items-center justify-center border-2 border-sky-200">
-                <span className="text-xs font-bold text-sky-500 uppercase tracking-widest">Room Code</span>
-                <span className="text-4xl font-black text-sky-700 tracking-widest">{roomId}</span>
+            <div className="space-y-6">
+              <div className="bg-white/5 rounded-3xl p-6 flex flex-col items-center justify-center border border-white/10 shadow-inner">
+                <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em] mb-2">Access Code</span>
+                <span className="text-5xl font-black text-white tracking-[0.2em]">{roomId}</span>
               </div>
-              <div className="bg-white p-2 rounded-xl shadow-inner flex justify-center border-2 border-sky-100">
-                <QRCodeSVG value={joinUrl} size={180} />
+              <div className="bg-white p-4 rounded-[2.5rem] shadow-2xl flex justify-center border-8 border-white/10">
+                <QRCodeSVG value={joinUrl} size={220} />
               </div>
-              <p className="text-center text-sm font-medium text-sky-600">Scan to Join & Play!</p>
+              <p className="text-center text-sm font-black text-white/60 uppercase tracking-widest mt-4">Scan to Join</p>
               
               {isLocalhost && (
-                <div className="mt-4 p-3 bg-red-100 border-2 border-red-200 rounded-xl text-red-600 text-[10px] font-bold text-center leading-tight uppercase tracking-wider">
+                <div className="mt-4 p-4 bg-amber-400/10 border border-amber-400/20 rounded-2xl text-amber-400/80 text-[10px] font-black text-center leading-relaxed uppercase tracking-widest">
                   ⚠️ Phone scan won't work on "localhost". <br/>
-                  Access this screen via your IP address <br/>
-                  (e.g., http://192.168.x.x:3001)
+                  Use your IP address (e.g. 192.168.x.x)
                 </div>
               )}
             </div>
           </div>
 
-          <div className="bg-sky-900/80 backdrop-blur-md rounded-2xl p-6 shadow-2xl border-2 border-sky-400/50 flex-1 overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-black text-white flex items-center gap-2">
-                <Users className="w-6 h-6 text-sky-400" />
+          <div className="bg-black/20 backdrop-blur-2xl rounded-[3rem] p-10 shadow-2xl border border-white/10 flex-1 overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-2xl font-black text-white flex items-center gap-4">
+                <div className="bg-sky-500/20 p-2 rounded-xl">
+                    <Users className="w-6 h-6 text-sky-400" />
+                </div>
                 Players ({players.length})
               </h2>
             </div>
-            <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
               {players.length === 0 ? (
-                <p className="text-sky-300 text-center italic mt-10">Waiting for players...</p>
+                <p className="text-sky-300/40 text-center italic mt-16 font-bold uppercase tracking-widest text-sm">Joining...</p>
               ) : (
                 players.map(player => (
-                  <div key={player.id} className={`flex items-center justify-between p-3 rounded-xl transition-all ${player.isAlive ? 'bg-white/10' : 'bg-red-500/20 grayscale opacity-60'}`}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-4 h-4 rounded-full" style={{ backgroundColor: player.color }} />
-                      <span className="font-bold text-white truncate max-w-[120px]">{player.name}</span>
+                  <div key={player.id} className={`flex items-center justify-between p-4 rounded-2xl transition-all duration-500 border ${player.isAlive ? 'bg-white/5 border-white/10' : 'bg-red-500/10 border-red-500/20 grayscale opacity-40'}`}>
+                    <div className="flex items-center gap-4">
+                      <div className="w-4 h-4 rounded-full shadow-lg" style={{ backgroundColor: player.color }} />
+                      <span className="font-black text-white text-lg tracking-tight truncate max-w-[140px] uppercase italic">{player.name}</span>
                     </div>
-                    <span className={`text-xs font-bold px-2 py-1 rounded-full ${player.isAlive ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
-                      {player.isAlive ? 'ALIVE' : 'DEAD'}
+                    <span className={`text-[10px] font-black px-3 py-1 rounded-full tracking-widest ${player.isAlive ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-red-500/20 text-red-500 border border-red-500/30'}`}>
+                      {player.isAlive ? 'READY' : 'CRASHED'}
                     </span>
                   </div>
                 ))
               )}
             </div>
-            {players.length < 2 && (
-                <div className="mt-4 p-3 bg-amber-500/20 border-2 border-amber-500/50 rounded-xl text-amber-300 text-sm font-bold text-center animate-pulse">
-                    Waiting for at least 2 players...
-                </div>
-            )}
-            {players.length >= 2 && roomState.state === 'WAITING' && (
-                <div className="mt-4 p-4 bg-green-500/20 border-2 border-green-500/50 rounded-xl text-green-300 text-sm font-bold text-center animate-pulse">
-                    Room is ready! Start from your phone.
-                </div>
-            )}
+            
+            <div className="mt-8">
+                {players.length < 2 ? (
+                    <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-amber-400 text-xs font-black text-center animate-pulse uppercase tracking-[0.2em]">
+                        Need 1 more player...
+                    </div>
+                ) : roomState.state === 'WAITING' ? (
+                    <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-2xl text-green-400 text-xs font-black text-center animate-pulse uppercase tracking-[0.2em]">
+                        Ready to launch!
+                    </div>
+                ) : null}
+            </div>
           </div>
         </div>
 
-        {/* Center: Status & Leaderboard */}
-        <div className="flex-1 flex flex-col items-center">
-            {roomState.state === 'STARTING' && (
-                <div className="mt-20 flex flex-col items-center bg-white/10 backdrop-blur-sm p-12 rounded-[4rem] border-4 border-white/20">
-                    <span className="text-white text-3xl font-black mb-4 drop-shadow-2xl uppercase tracking-[0.3em] opacity-80">
-                        {roomState.countdown > 5 ? "Wait for others or get ready!" : "Get Ready!"}
-                    </span>
-                    <span className="text-[12rem] font-black text-white drop-shadow-[0_10px_0_rgba(0,0,0,0.5)] leading-none animate-bounce flex items-center gap-4">
-                        {roomState.countdown}
-                        <span className="text-4xl opacity-50">s</span>
-                    </span>
-                </div>
-            )}
-
-            {roomState.state === 'GAME_OVER' && (
-                <div className="mt-20 flex flex-col items-center bg-white/95 backdrop-blur-xl p-10 rounded-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] border-8 border-sky-400 max-w-2xl w-full pointer-events-auto">
-                    <Trophy className="w-24 h-24 text-yellow-500 mb-6 animate-bounce" />
-                    <h2 className="text-6xl font-black text-sky-900 mb-2 uppercase italic italic">Game Over!</h2>
-                    {topPlayer && (
-                        <div className="text-center mb-8">
-                            <p className="text-xl font-bold text-sky-500 uppercase tracking-widest">Winner</p>
-                            <p className="text-5xl font-black text-sky-700">{topPlayer.name}</p>
-                            <p className="text-2xl font-black text-sky-400 mt-2">{topPlayer.score} Points</p>
-                        </div>
-                    )}
-                    <p className="text-sky-600 font-bold text-lg animate-pulse uppercase tracking-widest">
-                        Check your phone to Play Again!
-                    </p>
-                </div>
-            )}
-        </div>
-
-        {/* Right Side: High Score Dashboard */}
-        <div className="w-80 space-y-6">
-            <div className="bg-yellow-400 rounded-2xl p-6 shadow-2xl border-4 border-yellow-600 flex flex-col items-center text-yellow-900">
-                <Trophy className="w-12 h-12 mb-2" />
-                <span className="text-xs font-black uppercase tracking-widest opacity-80">Room High Score</span>
-                <span className="text-5xl font-black my-2">
-                    {Math.max(...players.map(p => p.highScore), 0)}
-                </span>
-                {topPlayer && (
-                    <span className="text-sm font-bold bg-yellow-600/20 px-3 py-1 rounded-full">
-                        BY {topPlayer.name.toUpperCase()}
-                    </span>
-                )}
+        {/* Right Side: Leaderboard */}
+        {isPlaying && (
+          <div className="ml-auto w-80 space-y-6 pointer-events-auto">
+            <div className="bg-white/10 backdrop-blur-3xl rounded-[3rem] p-10 shadow-2xl border border-white/20 animate-in slide-in-from-right-20 duration-500">
+              <div className="flex items-center gap-3 mb-8">
+                <Trophy className="w-8 h-8 text-amber-400" />
+                <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter leading-none">Leaderboard</h2>
+              </div>
+              <div className="space-y-4">
+                {sortedPlayers.slice(0, 5).map((player, index) => (
+                  <div key={player.id} className="flex items-center justify-between group transition-transform hover:translate-x-1">
+                    <div className="flex items-center gap-4">
+                      <span className={`text-xl font-black ${index === 0 ? 'text-amber-400' : 'text-white/40'}`}>
+                        0{index + 1}
+                      </span>
+                      <span className="font-black text-white text-lg tracking-tight uppercase italic">{player.name}</span>
+                    </div>
+                    <span className="text-2xl font-black text-white tracking-tighter">{Math.floor(player.score)}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div className="bg-sky-900/80 backdrop-blur-md rounded-2xl p-6 shadow-2xl border-2 border-sky-400/50">
-                <h2 className="text-xl font-black text-white flex items-center gap-2 mb-4">
-                    <Trophy className="w-6 h-6 text-yellow-500" />
-                    Leaderboard
-                </h2>
-                <div className="space-y-3">
-                    {sortedPlayers.slice(0, 5).map((player, i) => (
-                        <div key={player.id} className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <span className="text-2xl font-black text-sky-500 w-6 italic">#{i+1}</span>
-                                <span className="font-bold text-white truncate max-w-[120px]">{player.name}</span>
-                            </div>
-                            <span className="font-black text-sky-400">{player.score}</span>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        </div>
+            {roomState.state === 'GAME_OVER' && topPlayer && (
+                 <div className="bg-amber-400 rounded-[3rem] p-10 shadow-[0_20px_50px_rgba(251,191,36,0.3)] border-4 border-white animate-in zoom-in duration-500 text-center">
+                    <p className="text-amber-900 font-black text-[10px] uppercase tracking-[0.5em] mb-2">Round Champion</p>
+                    <h3 className="text-4xl font-black text-amber-950 uppercase italic tracking-tighter mb-4 line-clamp-1">{topPlayer.name}</h3>
+                    <div className="bg-white/30 rounded-2xl py-2 px-4 inline-block font-black text-amber-900 text-3xl">
+                        {Math.floor(topPlayer.score)} PTS
+                    </div>
+                 </div>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Global Status Footer */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 pointer-events-none">
+        {roomState.state === 'STARTING' ? (
+             <div className="flex flex-col items-center bg-white/10 backdrop-blur-xl px-12 py-6 rounded-full border border-white/20 shadow-2xl">
+                <div className="flex items-center gap-4 mb-1">
+                  <span className="text-white font-black text-5xl italic tracking-tighter">{roomState.countdown}</span>
+                  <p className="text-white font-black text-xl uppercase tracking-[0.5em] animate-pulse italic">Starting...</p>
+                </div>
+             </div>
+        ) : roomState.state === 'WAITING' && (
+             <div className="bg-white/5 backdrop-blur-md px-8 py-3 rounded-full border border-white/10 opacity-40">
+                <p className="text-white text-[10px] font-black uppercase tracking-[0.8em]">Lobby Active • Global Sync Online</p>
+             </div>
+        )}
+      </div>
+
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+      `}</style>
     </div>
   );
 }

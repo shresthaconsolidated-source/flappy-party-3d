@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import { Outfit } from "next/font/google";
 import "./globals.css";
+
+const outfit = Outfit({ subsets: ["latin"], weight: ["400", "700", "900"] });
 
 export const metadata: Metadata = {
   title: "Flappy Party 3D",
@@ -13,7 +16,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="antialiased font-sans">{children}</body>
+      <body className={`${outfit.className} antialiased bg-sky-900`}>{children}</body>
     </html>
   );
 }

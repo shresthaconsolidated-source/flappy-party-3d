@@ -97,7 +97,7 @@ export default function PlayerPage({ params }: { params: Promise<{ roomId: strin
   const localPlayer = localPlayerId ? roomState.players[localPlayerId] : null;
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-sky-400 touch-none" onClick={handleFlap}>
+    <div className="relative w-screen h-screen overflow-hidden bg-sky-900 touch-none" onClick={handleFlap}>
       {/* 3D View */}
       <div className="absolute inset-0">
         <GameScene 
@@ -115,15 +115,17 @@ export default function PlayerPage({ params }: { params: Promise<{ roomId: strin
       <div className="absolute inset-0 z-10 flex flex-col pointer-events-none p-6">
         {/* Top HUD */}
         <div className="flex justify-between items-start">
-            <div className="bg-sky-900/40 backdrop-blur-md rounded-2xl p-4 border-2 border-white/20">
-                <p className="text-[10px] font-black text-sky-200 uppercase tracking-[0.2em] mb-1">Score</p>
-                <p className="text-3xl font-black text-white leading-none">{localPlayer?.score || 0}</p>
+            <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-5 border border-white/20 shadow-2xl">
+                <p className="text-[10px] font-black text-white/50 uppercase tracking-[0.3em] mb-1">Current Score</p>
+                <p className="text-4xl font-black text-white leading-none tracking-tight">{localPlayer?.score || 0}</p>
             </div>
-            <div className="bg-yellow-400/90 backdrop-blur-md rounded-2xl p-4 border-2 border-yellow-200 shadow-lg flex items-center gap-3">
-                <Trophy className="w-5 h-5 text-yellow-900" />
+            <div className="bg-amber-400/20 backdrop-blur-xl rounded-3xl p-5 border border-amber-400/30 shadow-2xl flex items-center gap-4">
+                <div className="bg-amber-400 rounded-xl p-2 shadow-lg">
+                    <Trophy className="w-5 h-5 text-amber-900" />
+                </div>
                 <div className="text-right">
-                    <p className="text-[10px] font-black text-yellow-900 uppercase tracking-[0.2em]">Best</p>
-                    <p className="text-xl font-black text-yellow-900 leading-none">{localPlayer?.highScore || 0}</p>
+                    <p className="text-[10px] font-black text-amber-400/60 uppercase tracking-[0.3em]">Personal Best</p>
+                    <p className="text-2xl font-black text-amber-500 leading-none tracking-tight">{localPlayer?.highScore || 0}</p>
                 </div>
             </div>
         </div>
@@ -131,86 +133,94 @@ export default function PlayerPage({ params }: { params: Promise<{ roomId: strin
         {/* Center Messages */}
         <div className="flex-1 flex flex-col items-center justify-center text-center">
             {roomState.state === 'WAITING' && (
-                <div className="bg-white/95 rounded-[2rem] p-8 shadow-2xl border-b-8 border-sky-600 w-full max-w-xs animate-in fade-in zoom-in duration-300 pointer-events-auto">
-                    <BirdIcon className="w-12 h-12 text-sky-400 mx-auto mb-4" />
-                    <h2 className="text-2xl font-black text-sky-900 italic mb-2 uppercase">Waiting...</h2>
-                    <p className="text-sky-500 font-bold text-sm mb-6">Waiting for more players to join the party!</p>
+                <div className="bg-white/10 backdrop-blur-2xl rounded-[3rem] p-10 shadow-2xl border border-white/20 w-full max-w-sm animate-in fade-in zoom-in duration-500 pointer-events-auto">
+                    <div className="w-20 h-20 bg-sky-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-sky-400/30">
+                        <BirdIcon className="w-10 h-10 text-sky-400 animate-bounce" />
+                    </div>
+                    <h2 className="text-3xl font-black text-white italic mb-3 uppercase tracking-tighter">Waiting for Players</h2>
+                    <p className="text-sky-300 font-bold text-base mb-8 opacity-80">The party is about to start. Get ready to fly!</p>
                     
                         <button 
                             onClick={(e) => { e.stopPropagation(); startGame(); }}
                             onPointerDown={(e) => e.stopPropagation()}
-                            className={`w-full py-4 rounded-3xl font-black text-xl flex items-center justify-center gap-2 transition-all ${
+                            className={`w-full py-5 rounded-[2rem] font-black text-2xl flex items-center justify-center gap-3 transition-all duration-300 ${
                                 Object.keys(roomState.players).length >= 1 
-                                ? 'bg-sky-600 text-white shadow-[0_6px_0_rgb(30,58,138)] active:translate-y-1 active:shadow-none' 
-                                : 'bg-sky-200 text-sky-400 cursor-not-allowed'
+                                ? 'bg-white text-sky-900 shadow-[0_8px_20px_rgba(255,255,255,0.3)] hover:scale-105 active:scale-95' 
+                                : 'bg-white/5 text-white/20 cursor-not-allowed border border-white/10'
                             }`}
                         >
-                            <Play className="fill-current" />
+                            <Play className="fill-current w-6 h-6" />
                             START GAME
                         </button>
                 </div>
             )}
 
             {roomState.state === 'GAME_OVER' && (
-                <div className="bg-white/95 rounded-[2rem] p-8 shadow-2xl border-b-8 border-sky-600 w-full max-w-xs animate-in fade-in zoom-in duration-300 pointer-events-auto">
-                    <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4 animate-bounce" />
-                    <h2 className="text-3xl font-black text-sky-900 italic mb-2 uppercase">Round Over!</h2>
-                    <p className="text-sky-500 font-bold mb-8">The host screen shows the winner!</p>
+                <div className="bg-white/10 backdrop-blur-2xl rounded-[3rem] p-10 shadow-2xl border border-white/20 w-full max-w-sm animate-in fade-in zoom-in duration-500 pointer-events-auto">
+                    <div className="w-24 h-24 bg-amber-400/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-amber-400/30">
+                        <Trophy className="w-12 h-12 text-amber-400 animate-pulse" />
+                    </div>
+                    <h2 className="text-4xl font-black text-white italic mb-2 uppercase tracking-tighter">Round Over!</h2>
+                    <p className="text-sky-200 font-bold mb-10 opacity-70 italic text-lg line-clamp-2">"That was an epic flight!"</p>
 
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                         <button 
                             onClick={(e) => { e.stopPropagation(); restart(); }}
                             onPointerDown={(e) => e.stopPropagation()}
-                            className="w-full bg-sky-600 text-white font-black py-4 rounded-2xl shadow-[0_6px_0_rgb(30,58,138)] active:translate-y-1 active:shadow-none transition-all flex items-center justify-center gap-2 text-lg"
+                            className="w-full bg-white text-sky-900 font-black py-5 rounded-[2rem] shadow-[0_8px_25px_rgba(255,255,255,0.2)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 text-2xl"
                         >
-                            <RotateCcw className="w-5 h-5" />
+                            <RotateCcw className="w-6 h-6" />
                             PLAY AGAIN
                         </button>
                         <button 
                             onClick={(e) => { e.stopPropagation(); handleQuit(); }}
-                            className="w-full bg-sky-100 text-sky-600 font-bold py-3 rounded-2xl transition-all flex items-center justify-center gap-2 text-sm uppercase tracking-widest"
+                            className="w-full bg-white/5 hover:bg-white/10 text-white font-bold py-4 rounded-3xl border border-white/10 transition-all flex items-center justify-center gap-2 text-sm uppercase tracking-[0.2em] opacity-60"
                         >
                             <LogOut className="w-4 h-4" />
-                            Quit Room
+                            Leave Room
                         </button>
                     </div>
                 </div>
             )}
 
             {roomState.state === 'STARTING' && (
-                <div className="text-[10rem] font-black text-white drop-shadow-[0_8px_0_rgba(0,0,0,0.3)] animate-pulse">
-                    {roomState.countdown}
+                <div className="relative">
+                    <div className="absolute inset-0 bg-white/20 blur-[100px] rounded-full scale-150 animate-pulse" />
+                    <div className="relative text-[12rem] font-black text-white drop-shadow-2xl animate-in zoom-in duration-300">
+                        {roomState.countdown}
+                    </div>
                 </div>
             )}
 
             {localPlayer && !localPlayer.isAlive && roomState.state === 'PLAYING' && !isAcknowledged && (
-                <div className="bg-red-500 rounded-[2.5rem] p-8 shadow-2xl border-b-8 border-red-800 animate-in slide-in-from-bottom-20 duration-500 w-full max-w-xs pointer-events-auto">
-                    <h2 className="text-4xl font-black text-white italic mb-2 uppercase">Crashed!</h2>
-                    <p className="text-red-100 font-bold text-lg mb-6 leading-tight">You're out for this round.</p>
-                    <div className="bg-white/20 rounded-2xl p-4 mb-6">
-                        <p className="text-xs font-black text-white uppercase tracking-widest opacity-80 mb-1">Final Score</p>
-                        <p className="text-4xl font-black text-white leading-none">{localPlayer.score}</p>
+                <div className="bg-red-500/20 backdrop-blur-2xl rounded-[3rem] p-10 shadow-2xl border border-red-500/30 animate-in slide-in-from-bottom-20 duration-700 w-full max-w-sm pointer-events-auto">
+                    <h2 className="text-5xl font-black text-white italic mb-2 uppercase tracking-tighter">Crashed!</h2>
+                    <p className="text-red-400 font-black text-xl mb-8 uppercase tracking-widest">Game Over</p>
+                    
+                    <div className="bg-white/5 rounded-[2rem] p-6 mb-8 border border-white/10 text-center">
+                        <p className="text-xs font-black text-white/40 uppercase tracking-[0.3em] mb-2">Total Points</p>
+                        <p className="text-6xl font-black text-white leading-none tracking-tight">{localPlayer.score}</p>
                     </div>
 
-                    <div className="space-y-3">
-                        <div className="bg-white/10 rounded-xl p-3 mb-2 text-center">
-                            <p className="text-white font-bold text-xs uppercase tracking-widest animate-pulse">
-                                Waiting for others to finish...
+                    <div className="space-y-4">
+                        <div className="bg-white/5 rounded-2xl p-4 text-center border border-white/5">
+                            <p className="text-white/60 font-bold text-sm uppercase tracking-widest animate-pulse">
+                                Spectating others...
                             </p>
                         </div>
                         <button 
                             onClick={(e) => { e.stopPropagation(); setIsAcknowledged(true); }}
-                            className="w-full bg-white text-red-600 font-black py-4 rounded-2xl shadow-[0_4px_0_rgb(153,27,27)] active:translate-y-1 active:shadow-none transition-all flex items-center justify-center gap-2 text-lg"
+                            className="w-full bg-white text-red-600 font-black py-5 rounded-[2rem] shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 text-2xl"
                         >
-                            <Play className="w-5 h-5 fill-current" />
+                            <Play className="w-6 h-6 fill-current" />
                             SPECTATE
                         </button>
                         <button 
                             onClick={(e) => { e.stopPropagation(); handleQuit(); }}
-                            className="w-full bg-red-800/40 hover:bg-red-800/60 text-white font-bold py-3 rounded-2xl border-2 border-white/20 transition-all flex items-center justify-center gap-2 text-sm uppercase tracking-widest"
+                            className="w-full bg-white/5 hover:bg-white/10 text-white font-bold py-4 rounded-3xl border border-white/10 transition-all flex items-center justify-center gap-2 text-sm uppercase tracking-[0.2em] opacity-40"
                         >
                             <LogOut className="w-4 h-4" />
-                            Quit Room
+                            Leave
                         </button>
                     </div>
                 </div>
@@ -219,15 +229,14 @@ export default function PlayerPage({ params }: { params: Promise<{ roomId: strin
 
         {/* Bottom Instructions */}
         {roomState.state === 'PLAYING' && localPlayer?.isAlive && (
-            <div className="mb-10 text-center animate-bounce">
-                <p className="text-white font-black text-xl italic uppercase tracking-tighter drop-shadow-md">
-                    Tap to Jump!
+            <div className="mb-10 text-center">
+                <p className="text-white font-black text-2xl italic uppercase tracking-tighter drop-shadow-2xl animate-bounce">
+                    Tap to Fly
                 </p>
             </div>
         )}
       </div>
       
-      {/* Visual Feedback for Tap */}
       <style jsx global>{`
         @keyframes pulse-ring {
           0% { transform: scale(0.8); opacity: 0.5; }
