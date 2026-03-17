@@ -178,6 +178,22 @@ export default function PlayerPage({ params }: { params: Promise<{ roomId: strin
                 <p className="text-2xl font-black text-white leading-none italic">{localPlayer?.score || 0}</p>
             </div>
             
+            <div className="flex flex-col gap-2">
+                <div className="bg-amber-400/10 backdrop-blur-2xl rounded-2xl p-2 border border-amber-400/20 shadow-2xl flex items-center gap-2">
+                    <Trophy className="w-3 h-3 text-amber-400" />
+                    <div className="text-right">
+                        <p className="text-[6px] font-black text-amber-400/50 uppercase tracking-[0.2em]">Record</p>
+                        <p className="text-lg font-black text-amber-400 leading-none italic">{roomState.allTimeBest || 0}</p>
+                    </div>
+                </div>
+                <div className="bg-white/5 backdrop-blur-2xl rounded-2xl p-2 border border-white/10 flex items-center gap-2 opacity-60">
+                    <div className="text-right">
+                        <p className="text-[6px] font-black text-white/30 uppercase tracking-[0.2em]">PB</p>
+                        <p className="text-lg font-black text-white leading-none italic">{persistentBest}</p>
+                    </div>
+                </div>
+            </div>
+            
             {/* Fullscreen Toggle */}
             <button 
                 onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }}
@@ -189,16 +205,6 @@ export default function PlayerPage({ params }: { params: Promise<{ roomId: strin
                     <Play className="w-5 h-5 text-white/60 rotate-90" /> // Using play rotated for 'expand'
                 )}
             </button>
-
-            <div className="bg-amber-400/10 backdrop-blur-2xl rounded-3xl p-3 border border-amber-400/20 shadow-2xl flex items-center gap-3">
-                <div className="text-right">
-                    <p className="text-[7px] font-black text-amber-400/50 uppercase tracking-[0.3em]">PB</p>
-                    <p className="text-xl font-black text-amber-400 leading-none italic">{persistentBest}</p>
-                </div>
-                <div className="bg-amber-400/20 rounded-xl p-2">
-                    <Trophy className="w-4 h-4 text-amber-400" />
-                </div>
-            </div>
         </div>
 
         {/* Center Messages */}

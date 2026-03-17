@@ -24,6 +24,7 @@ export interface RoomState {
   startTime: number | null;
   countdown: number;
   lastObstacleX: number;
+  allTimeBest?: number;
 }
 
 export type ServerMessage =

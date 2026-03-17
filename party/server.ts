@@ -14,8 +14,16 @@ export default class FlappyServer implements Server {
       obstacles: [],
       startTime: null,
       countdown: 0,
-      lastObstacleX: INITIAL_OBSTACLE_X
+      lastObstacleX: INITIAL_OBSTACLE_X,
+      allTimeBest: 0
     };
+  }
+
+  async onStart() {
+    const saved = await this.party.storage.get<number>("allTimeBest");
+    if (saved !== undefined) {
+      this.state.allTimeBest = saved;
+    }
   }
 
   onConnect(conn: Connection) {
@@ -104,6 +112,13 @@ export default class FlappyServer implements Server {
           if (data.score > this.state.players[conn.id].highScore) {
             this.state.players[conn.id].highScore = data.score;
           }
+          
+          // Persistent All-Time Best
+          if (data.score > (this.state.allTimeBest || 0)) {
+            this.state.allTimeBest = data.score;
+            this.party.storage.put("allTimeBest", data.score);
+          }
+
           this.broadcastState();
           this.checkGameEnd();
         }

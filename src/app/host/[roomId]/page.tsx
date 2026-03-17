@@ -120,6 +120,15 @@ export default function HostPage({ params }: { params: Promise<{ roomId: string 
                 <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em] mb-2">Access Code</span>
                 <span className="text-5xl font-black text-white tracking-[0.2em]">{roomId}</span>
               </div>
+              
+              <div className="bg-amber-400/10 rounded-3xl p-6 flex flex-col items-center justify-center border border-amber-400/20 shadow-2xl">
+                <span className="text-[10px] font-black text-amber-400 uppercase tracking-[0.5em] mb-2">World Record</span>
+                <div className="flex items-center gap-3">
+                    <Trophy className="w-6 h-6 text-amber-400" />
+                    <span className="text-5xl font-black text-amber-400 tracking-tighter italic">{roomState.allTimeBest || 0}</span>
+                </div>
+              </div>
+
               <div className="bg-white p-4 rounded-[2.5rem] shadow-2xl flex justify-center border-8 border-white/10">
                 <QRCodeSVG value={joinUrl} size={220} />
               </div>
