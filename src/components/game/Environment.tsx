@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useMemo } from "react";
+import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Float, ContactShadows, useTexture, Environment as DreiEnvironment } from "@react-three/drei";
+import { Float, ContactShadows } from "@react-three/drei";
 import * as THREE from "three";
 
 function Cloud({ position, speed }: { position: [number, number, number], speed: number }) {
@@ -34,30 +34,9 @@ function Cloud({ position, speed }: { position: [number, number, number], speed:
 export function Environment() {
   const floorRef = useRef<THREE.Mesh>(null);
   
-  // Create a better procedural grid texture if possible, or stick to a clean one
-  const gridTexture = useTexture('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/grid.png');
-  
-  useMemo(() => {
-    if (gridTexture) {
-      gridTexture.wrapS = gridTexture.wrapT = THREE.RepeatWrapping;
-      gridTexture.repeat.set(20, 4);
-      gridTexture.anisotropy = 16;
-    }
-  }, [gridTexture]);
-
-  useFrame((state) => {
-    if (floorRef.current) {
-        const material = floorRef.current.material as THREE.MeshStandardMaterial;
-        if (material.map) {
-            material.map.offset.x += 0.005; // Smooth scroll
-        }
-    }
-  });
-
   return (
     <>
       <color attach="background" args={['#0ea5e9']} />
-      <fog attach="fog" args={['#0ea5e9', 10, 25]} />
       
       {/* Premium Lighting */}
       <ambientLight intensity={0.8} />
@@ -65,15 +44,13 @@ export function Environment() {
         position={[10, 10, 5]}
         intensity={1.5}
         castShadow
-        shadow-mapSize={[2048, 2048]}
+        shadow-mapSize={[1024, 1024]}
       >
         <orthographicCamera attach="shadow-camera" args={[-10, 10, 10, -10, 0.1, 50]} />
       </directionalLight>
       
       {/* Studio Lighting - Backlight for depth */}
       <pointLight position={[-10, 5, -5]} intensity={1} color="#ffffff" />
-      
-      <DreiEnvironment preset="city" />
 
       {/* Moving Clouds in Background */}
       <Cloud position={[10, 4, -5]} speed={0.01} />
@@ -86,9 +63,6 @@ export function Environment() {
         <planeGeometry args={[100, 40]} />
         <meshStandardMaterial 
             color="#0369a1" 
-            map={gridTexture}
-            transparent
-            opacity={0.8}
             roughness={0.1}
             metalness={0.2}
         />

@@ -54,7 +54,6 @@ export function Bird({ position, color, name, isLocal }: BirdProps) {
           position={[0, 1, 0]}
           fontSize={0.25}
           color="white"
-          font="https://fonts.gstatic.com/s/outfit/v11/QGYvz_kZ_D4AAtNI.woff"
           anchorX="center"
           anchorY="middle"
           outlineWidth={0.02}
