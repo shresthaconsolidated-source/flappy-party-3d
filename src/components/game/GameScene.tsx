@@ -100,8 +100,8 @@ function GameLoop({ roomState, onFlap, onDie, localPlayerId, jumpTrigger, onUpda
         velocityRef.current += currentGravity;
         positionYRef.current += velocityRef.current;
         
-        // Floor/Ceiling collision
-        if (positionYRef.current < -5 || positionYRef.current > 5) {
+        // Floor/Ceiling collision (Bird radius effectively 0.35)
+        if (positionYRef.current < -4.65 || positionYRef.current > 4.65) {
             isAliveRef.current = false;
             onDie?.(scoreRef.current);
         }
@@ -124,9 +124,11 @@ function GameLoop({ roomState, onFlap, onDie, localPlayerId, jumpTrigger, onUpda
                 onScoreUpdate?.(scoreRef.current);
             }
 
-            // Collision
-            if (Math.abs(pipeX - BIRD_X) < 0.6) {
-                if (positionYRef.current > pipe.gapY + 1.25 || positionYRef.current < pipe.gapY - 1.25) {
+            // Collision (Bird radius: 0.35, Pipe Cap radius: 0.6, Gap: 2.5/2 = 1.25)
+            // Horizontal check (0.35 + 0.6 = 0.95, using 0.9 for a slightly more forgiving but tight feel)
+            if (Math.abs(pipeX - BIRD_X) < 0.9) {
+                // Vertical check (1.25 - 0.35 = 0.9)
+                if (positionYRef.current > pipe.gapY + 0.9 || positionYRef.current < pipe.gapY - 0.9) {
                     isAliveRef.current = false;
                     onDie?.(scoreRef.current);
                 }
