@@ -15,7 +15,24 @@ export default function PlayerPage({ params }: { params: Promise<{ roomId: strin
   const [jumpTrigger, setJumpTrigger] = useState(0);
   const [isAcknowledged, setIsAcknowledged] = useState(false);
   const [persistentBest, setPersistentBest] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const localPlayerId = socket?.id;
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+        setIsFullscreen(true);
+    } else {
+        document.exitFullscreen().catch(() => {});
+        setIsFullscreen(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handleFsChange);
+    return () => document.removeEventListener('fullscreenchange', handleFsChange);
+  }, []);
 
   // Load persistent best
   useEffect(() => {
@@ -76,41 +93,37 @@ export default function PlayerPage({ params }: { params: Promise<{ roomId: strin
 
   if (!hasJoined) {
     return (
-      <div className="min-h-screen bg-slate-950 p-6 flex flex-col items-center justify-center font-sans">
-        <div className="w-full max-w-sm bg-white/5 backdrop-blur-3xl rounded-[3rem] p-10 shadow-2xl border border-white/10">
-          <div className="flex flex-col items-center mb-8">
-            <div className="w-24 h-24 bg-sky-500/20 rounded-full flex items-center justify-center mb-6 border border-sky-400/30 shadow-inner">
-              <BirdIcon className="w-12 h-12 text-sky-400" />
+      <div className="min-h-screen bg-slate-950 p-4 flex flex-col items-center justify-center font-sans overflow-y-auto">
+        <div className="w-full max-w-sm bg-white/5 backdrop-blur-3xl rounded-[3rem] p-8 shadow-2xl border border-white/10 flex flex-col max-h-[90vh]">
+          <div className="flex flex-col items-center mb-6 flex-shrink-0">
+            <div className="w-16 h-16 bg-sky-500/20 rounded-full flex items-center justify-center mb-4 border border-sky-400/30">
+              <BirdIcon className="w-8 h-8 text-sky-400" />
             </div>
-            <h1 className="text-4xl font-black text-white italic tracking-tighter uppercase leading-none text-center">
+            <h1 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none text-center">
                 Flappy <br/> Party 3D
             </h1>
-            <p className="text-sky-400 font-black uppercase tracking-[0.4em] text-[10px] mt-4 opacity-60 flex items-center gap-2">
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-ping" />
-                Lobby {roomId}
-            </p>
           </div>
 
-          <form onSubmit={handleJoin} className="space-y-6">
-            <div className="space-y-2">
-              <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.4em] mb-2 ml-6">Your Callsign</label>
+          <form onSubmit={handleJoin} className="space-y-4 overflow-y-auto pr-2">
+            <div className="space-y-1">
+              <label className="block text-[8px] font-black text-white/40 uppercase tracking-[0.4em] mb-1 ml-4">Callsign</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 maxLength={12}
                 placeholder="SKY-KING"
-                className="w-full bg-white/5 border border-white/10 rounded-[2rem] py-5 px-8 text-2xl font-black text-white placeholder:text-white/10 focus:outline-none focus:border-sky-500 focus:bg-white/10 transition-all text-center uppercase italic"
+                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-xl font-black text-white placeholder:text-white/10 focus:outline-none focus:border-sky-500 transition-all text-center uppercase italic"
                 autoFocus
                 required
               />
             </div>
             <button
               type="submit"
-              className="w-full bg-sky-500 hover:bg-sky-400 text-white font-black py-6 rounded-[2.5rem] shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3 text-2xl italic tracking-tighter"
+              className="w-full bg-sky-500 hover:bg-sky-400 text-white font-black py-5 rounded-[2rem] shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3 text-xl italic tracking-tighter"
             >
               LAUNCH
-              <ChevronRight className="w-8 h-8" />
+              <ChevronRight className="w-6 h-6" />
             </button>
           </form>
         </div>
@@ -142,14 +155,27 @@ export default function PlayerPage({ params }: { params: Promise<{ roomId: strin
       <div className="absolute inset-0 z-10 flex flex-col pointer-events-none p-4 safe-area-inset">
         {/* Top HUD - Landscape Friendly */}
         <div className="flex justify-between items-start w-full">
-            <div className="bg-white/5 backdrop-blur-2xl rounded-3xl p-4 border border-white/10 shadow-2xl min-w-[100px]">
-                <p className="text-[8px] font-black text-white/40 uppercase tracking-[0.3em] mb-1">Score</p>
-                <p className="text-3xl font-black text-white leading-none italic">{localPlayer?.score || 0}</p>
+            <div className="bg-white/5 backdrop-blur-2xl rounded-3xl p-3 border border-white/10 shadow-2xl min-w-[80px]">
+                <p className="text-[7px] font-black text-white/40 uppercase tracking-[0.3em] mb-1">Score</p>
+                <p className="text-2xl font-black text-white leading-none italic">{localPlayer?.score || 0}</p>
             </div>
-            <div className="bg-amber-400/10 backdrop-blur-2xl rounded-3xl p-4 border border-amber-400/20 shadow-2xl flex items-center gap-3">
+            
+            {/* Fullscreen Toggle */}
+            <button 
+                onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }}
+                className="pointer-events-auto bg-white/10 backdrop-blur-xl p-3 rounded-2xl border border-white/20 hover:bg-white/20 active:scale-90 transition-all"
+            >
+                {isFullscreen ? (
+                    <RotateCcw className="w-5 h-5 text-white/60" /> // Using rotate as a proxy for 'return/exit' if no specific icon
+                ) : (
+                    <Play className="w-5 h-5 text-white/60 rotate-90" /> // Using play rotated for 'expand'
+                )}
+            </button>
+
+            <div className="bg-amber-400/10 backdrop-blur-2xl rounded-3xl p-3 border border-amber-400/20 shadow-2xl flex items-center gap-3">
                 <div className="text-right">
-                    <p className="text-[8px] font-black text-amber-400/50 uppercase tracking-[0.3em]">Record</p>
-                    <p className="text-2xl font-black text-amber-400 leading-none italic">{persistentBest}</p>
+                    <p className="text-[7px] font-black text-amber-400/50 uppercase tracking-[0.3em]">PB</p>
+                    <p className="text-xl font-black text-amber-400 leading-none italic">{persistentBest}</p>
                 </div>
                 <div className="bg-amber-400/20 rounded-xl p-2">
                     <Trophy className="w-4 h-4 text-amber-400" />
@@ -158,50 +184,50 @@ export default function PlayerPage({ params }: { params: Promise<{ roomId: strin
         </div>
 
         {/* Center Messages */}
-        <div className="flex-1 flex flex-col items-center justify-center text-center">
+        <div className="flex-1 flex flex-col items-center justify-center text-center p-2">
             {roomState.state === 'WAITING' && (
-                <div className="bg-white/5 backdrop-blur-3xl rounded-[3rem] p-10 shadow-2xl border border-white/10 w-full max-w-sm animate-in fade-in zoom-in duration-500 pointer-events-auto">
-                    <div className="w-20 h-20 bg-sky-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-sky-400/30">
-                        <BirdIcon className="w-10 h-10 text-sky-400 animate-bounce" />
+                <div className="bg-white/5 backdrop-blur-3xl rounded-[2.5rem] p-6 shadow-2xl border border-white/10 w-full max-w-sm animate-in fade-in zoom-in duration-500 pointer-events-auto flex flex-col max-h-full overflow-y-auto">
+                    <div className="w-12 h-12 bg-sky-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-sky-400/30 flex-shrink-0">
+                        <BirdIcon className="w-6 h-6 text-sky-400" />
                     </div>
-                    <h2 className="text-3xl font-black text-white italic mb-2 uppercase tracking-tighter">Prepare For Flight</h2>
-                    <p className="text-white/40 font-bold text-sm mb-8 uppercase tracking-widest">Awaiting Launch Signal...</p>
+                    <h2 className="text-2xl font-black text-white italic mb-1 uppercase tracking-tighter">Ready?</h2>
+                    <p className="text-white/40 font-bold text-[8px] mb-6 uppercase tracking-widest">Waiting for launch...</p>
                     
                     <button 
                         onClick={(e) => { e.stopPropagation(); startGame(); }}
                         onPointerDown={(e) => e.stopPropagation()}
-                        className={`w-full py-5 rounded-[2rem] font-black text-2xl flex items-center justify-center gap-3 transition-all duration-300 ${
+                        className={`w-full py-4 rounded-3xl font-black text-xl flex items-center justify-center gap-3 transition-all duration-300 flex-shrink-0 ${
                             Object.keys(roomState.players).length >= 1 
-                            ? 'bg-sky-500 text-white shadow-lg hover:scale-105 active:scale-95' 
+                            ? 'bg-sky-500 text-white shadow-lg active:scale-95' 
                             : 'bg-white/5 text-white/10 cursor-not-allowed border border-white/10'
                         }`}
                     >
-                        <Play className="fill-current w-6 h-6" />
                         START GAME
                     </button>
                 </div>
             )}
 
             {roomState.state === 'GAME_OVER' && (
-                <div className="bg-white/5 backdrop-blur-3xl rounded-[3rem] p-10 shadow-2xl border border-white/10 w-full max-w-sm animate-in fade-in zoom-in duration-500 pointer-events-auto">
-                    <div className="w-20 h-20 bg-amber-400/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-amber-400/30">
-                        <Trophy className="w-10 h-10 text-amber-400" />
-                    </div>
-                    <h2 className="text-4xl font-black text-white italic mb-2 uppercase tracking-tighter leading-none">ROUND <br/> ENDED</h2>
+                <div className="bg-white/5 backdrop-blur-3xl rounded-[2.5rem] p-6 shadow-2xl border border-white/10 w-full max-w-sm animate-in fade-in zoom-in duration-500 pointer-events-auto flex flex-col max-h-full overflow-y-auto">
+                    <h2 className="text-3xl font-black text-white italic mb-1 uppercase tracking-tighter leading-none">ROUND <br/> OVER</h2>
                     <p className="text-white/40 font-black text-[10px] mb-10 uppercase tracking-[0.4em]">Final Results Certified</p>
 
-                    <div className="space-y-4">
+                    <div className="bg-white/5 rounded-2xl p-4 my-4 flex-shrink-0">
+                        <p className="text-2xl font-black text-white">{localPlayer?.score || 0} PTS</p>
+                    </div>
+
+                    <div className="space-y-3">
                         <button 
                             onClick={(e) => { e.stopPropagation(); restart(); }}
                             onPointerDown={(e) => e.stopPropagation()}
-                            className="w-full bg-white text-slate-950 font-black py-5 rounded-[2rem] shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 text-2xl italic tracking-tighter"
+                            className="w-full bg-white text-slate-950 font-black py-4 rounded-3xl shadow-xl active:scale-95 transition-all text-xl italic uppercase"
                         >
                             <RotateCcw className="w-6 h-6" />
                             RE-ENTRY
                         </button>
                         <button 
                             onClick={(e) => { e.stopPropagation(); handleQuit(); }}
-                            className="w-full bg-white/5 hover:bg-white/10 text-white/40 font-black py-4 rounded-3xl border border-white/5 transition-all text-[10px] uppercase tracking-[0.4em]"
+                            className="w-full bg-white/5 text-white/30 py-3 rounded-2xl text-[8px] uppercase tracking-widest border border-white/5"
                         >
                             <LogOut className="w-3 h-3 mr-2" />
                             Return to Base
@@ -211,17 +237,17 @@ export default function PlayerPage({ params }: { params: Promise<{ roomId: strin
             )}
 
             {roomState.state === 'STARTING' && (
-                <div className="relative scale-150">
-                    <div className="text-[12rem] font-black text-white drop-shadow-[0_0_50px_rgba(255,255,255,0.5)] animate-in zoom-in duration-300 italic tracking-tighter">
+                <div className="relative">
+                    <div className="text-9xl font-black text-white drop-shadow-[0_0_50px_rgba(255,255,255,0.5)] animate-in zoom-in duration-300 italic tracking-tighter">
                         {roomState.countdown}
                     </div>
                 </div>
             )}
 
             {localPlayer && !localPlayer.isAlive && roomState.state === 'PLAYING' && !isAcknowledged && (
-                <div className="bg-red-600/10 backdrop-blur-3xl rounded-[3rem] p-10 shadow-2xl border border-red-500/20 animate-in slide-in-from-bottom-20 duration-700 w-full max-w-sm pointer-events-auto">
-                    <h2 className="text-5xl font-black text-white italic mb-2 uppercase tracking-tighter">DOWNED!</h2>
-                    <p className="text-red-400 font-black text-[10px] mb-8 uppercase tracking-[0.5em]">System Failure</p>
+                <div className="bg-red-600/10 backdrop-blur-3xl rounded-[2.5rem] p-6 shadow-2xl border border-red-500/20 animate-in slide-in-from-bottom-20 duration-500 w-full max-w-sm pointer-events-auto flex flex-col max-h-full overflow-y-auto">
+                    <h2 className="text-4xl font-black text-white italic mb-1 uppercase tracking-tighter">CRASHED!</h2>
+                    <p className="text-red-400 font-black text-[8px] mb-4 uppercase tracking-[0.5em]">Score: {localPlayer.score}</p>
                     
                     <div className="bg-white/5 rounded-[2rem] p-6 mb-8 border border-white/5 text-center">
                         <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] mb-1">Final Score</p>
@@ -231,7 +257,7 @@ export default function PlayerPage({ params }: { params: Promise<{ roomId: strin
                     <div className="flex flex-col gap-4">
                         <button 
                             onClick={(e) => { e.stopPropagation(); setIsAcknowledged(true); }}
-                            className="w-full bg-white text-red-600 font-black py-5 rounded-[2rem] shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 text-2xl italic tracking-tighter"
+                            className="w-full bg-white text-red-600 font-black py-4 rounded-3xl shadow-xl active:scale-95 transition-all text-xl italic uppercase"
                         >
                             <Play className="w-6 h-6 fill-current" />
                             SPECTATE
@@ -247,23 +273,23 @@ export default function PlayerPage({ params }: { params: Promise<{ roomId: strin
         </div>
 
         {/* Bottom Bar: Instructions or Reactions */}
-        <div className="flex flex-col items-center gap-4 mb-4 sm:mb-8">
+        <div className="flex flex-col items-center gap-2 mb-2 sm:mb-4">
             {roomState.state === 'PLAYING' && localPlayer?.isAlive && (
-                <p className="text-white font-black text-2xl italic uppercase tracking-tighter drop-shadow-2xl animate-bounce pointer-events-none opacity-60">
+                <p className="text-white font-black text-xl italic uppercase tracking-tighter drop-shadow-2xl animate-bounce pointer-events-none opacity-40">
                     TAP TO THRUST
                 </p>
             )}
 
             {/* Emoji Reaction Bar (Visible when Dead or Spectating) */}
             {(roomState.state === 'PLAYING' && (!localPlayer?.isAlive || isAcknowledged)) && (
-                <div className="bg-white/5 backdrop-blur-2xl rounded-full p-2 border border-white/10 flex items-center gap-2 pointer-events-auto shadow-2xl animate-in slide-in-from-bottom-5 duration-500">
+                <div className="bg-white/5 backdrop-blur-2xl rounded-full p-1 border border-white/10 flex items-center gap-1 pointer-events-auto shadow-2xl animate-in slide-in-from-bottom-5 duration-500">
                     <p className="text-[8px] font-black text-white/30 uppercase tracking-widest ml-4 mr-2 hidden sm:block">React</p>
                     {[ '🔥', '👏', '❤️', '😱', '😂', '👑' ].map(emoji => (
                         <button
                             key={emoji}
                             onClick={(e) => { e.stopPropagation(); sendEmoji(emoji); }}
                             onPointerDown={(e) => e.stopPropagation()}
-                            className="w-12 h-12 flex items-center justify-center text-2xl hover:scale-125 transition-transform active:scale-90 bg-white/5 rounded-full"
+                            className="w-10 h-10 flex items-center justify-center text-xl hover:scale-125 transition-transform active:scale-90 bg-white/5 rounded-full"
                         >
                             {emoji}
                         </button>
@@ -275,20 +301,25 @@ export default function PlayerPage({ params }: { params: Promise<{ roomId: strin
       
       <style jsx global>{`
         .safe-area-inset {
-            padding-bottom: env(safe-area-inset-bottom);
-            padding-top: env(safe-area-inset-top);
-            padding-left: env(safe-area-inset-left);
-            padding-right: env(safe-area-inset-right);
+            padding-bottom: max(1rem, env(safe-area-inset-bottom));
+            padding-top: max(1rem, env(safe-area-inset-top));
+            padding-left: max(1rem, env(safe-area-inset-left));
+            padding-right: max(1rem, env(safe-area-inset-right));
         }
         @media (orientation: landscape) {
-            .safe-area-inset {
-                padding-left: max(1rem, env(safe-area-inset-left));
-                padding-right: max(1rem, env(safe-area-inset-right));
-            }
             .max-w-sm { 
-                max-width: 500px;
+                max-width: 400px;
                 margin: auto;
             }
+            h1 { font-size: 1.5rem !important; }
+            h2 { font-size: 1.2rem !important; }
+            .text-9xl { font-size: 4rem !important; }
+            .p-10 { padding: 1.5rem !important; }
+            .p-8 { padding: 1rem !important; }
+            .mb-8 { margin-bottom: 1rem !important; }
+            .mb-6 { margin-bottom: 0.5rem !important; }
+            input { padding: 0.75rem !important; font-size: 1rem !important; }
+            button { padding: 0.75rem !important; font-size: 1rem !important; }
         }
       `}</style>
     </div>
