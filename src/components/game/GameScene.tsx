@@ -199,7 +199,7 @@ function GameLoop({ roomState, onFlap, onDie, localPlayerId, jumpTrigger, onUpda
       })}
 
       {/* Local Player */}
-      {roomState?.players[localPlayerId || ''] && (
+      {roomState?.players[localPlayerId || '']?.isAlive && (
         <Bird 
           position={[BIRD_X, localY, 0]} 
           color={roomState.players[localPlayerId!].color} 

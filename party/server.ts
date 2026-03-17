@@ -100,11 +100,7 @@ export default class FlappyServer implements Server {
         break;
 
       case 'RESTART':
-        if (Object.keys(this.state.players).length >= 1) {
-            this.startCountdown(3);
-        } else {
-            this.resetGame();
-        }
+        this.resetGame();
         break;
     }
   }

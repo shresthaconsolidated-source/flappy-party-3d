@@ -193,12 +193,17 @@ export default function PlayerPage({ params }: { params: Promise<{ roomId: strin
                     </div>
 
                     <div className="space-y-3">
+                        <div className="bg-white/10 rounded-xl p-3 mb-2 text-center">
+                            <p className="text-white font-bold text-xs uppercase tracking-widest animate-pulse">
+                                Waiting for others to finish...
+                            </p>
+                        </div>
                         <button 
                             onClick={(e) => { e.stopPropagation(); setIsAcknowledged(true); }}
                             className="w-full bg-white text-red-600 font-black py-4 rounded-2xl shadow-[0_4px_0_rgb(153,27,27)] active:translate-y-1 active:shadow-none transition-all flex items-center justify-center gap-2 text-lg"
                         >
-                            <RotateCcw className="w-5 h-5" />
-                            PLAY AGAIN
+                            <Play className="w-5 h-5 fill-current" />
+                            SPECTATE
                         </button>
                         <button 
                             onClick={(e) => { e.stopPropagation(); handleQuit(); }}
