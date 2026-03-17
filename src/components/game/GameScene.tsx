@@ -243,9 +243,21 @@ function GameLoop({ roomState, onFlap, onDie, localPlayerId, jumpTrigger, onUpda
 }
 
 export function GameScene(props: GameSceneProps) {
+  const [fov, setFov] = useState(45);
+
+  useEffect(() => {
+    const handleResize = () => {
+        const isLandscape = window.innerWidth > window.innerHeight;
+        setFov(isLandscape ? 55 : 45); // Wilder view for landscape
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <div className="w-full h-full bg-slate-950 overflow-hidden relative">
-      <Canvas shadows camera={{ position: [5, 0, 12], fov: 45 }} dpr={[1, 2]}>
+      <Canvas shadows camera={{ position: [5, 0, 12], fov }} dpr={[1, 2]}>
         <Suspense fallback={null}>
           <GameLoop {...props} />
         </Suspense>

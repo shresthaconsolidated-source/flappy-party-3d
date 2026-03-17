@@ -19,20 +19,35 @@ export default class FlappyServer implements Server {
   }
 
   onConnect(conn: Connection) {
+    // Prune any players that don't have active connections to prevent "ghosts"
+    const activeIds = new Set([...this.party.getConnections()].map(c => c.id));
+    let changed = false;
+    for (const id in this.state.players) {
+        if (!activeIds.has(id)) {
+            delete this.state.players[id];
+            changed = true;
+        }
+    }
+    
     conn.send(JSON.stringify({ type: 'STATE', state: this.state }));
+    if (changed) this.broadcastState();
   }
 
   onClose(conn: Connection) {
-    // If they leave mid-game, mark them dead so the round can end for others
-    if (this.state.state === 'PLAYING' && this.state.players[conn.id]) {
-      this.state.players[conn.id].isAlive = false;
-      this.checkGameEnd();
-    }
-
-    delete this.state.players[conn.id];
+    console.log(`Connection closed: ${conn.id}`);
     
-    // If no players left at all, reset game
-    if (Object.keys(this.state.players).length === 0) {
+    if (this.state.players[conn.id]) {
+      // If they leave mid-game, mark them dead so the round can end for others
+      if (this.state.state === 'PLAYING') {
+        this.state.players[conn.id].isAlive = false;
+        this.checkGameEnd();
+      }
+      delete this.state.players[conn.id];
+    }
+    
+    // Final check for remaining connections
+    const connections = [...this.party.getConnections()];
+    if (connections.length === 0) {
       this.resetGame();
     }
     

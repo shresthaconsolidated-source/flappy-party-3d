@@ -3,7 +3,7 @@
 import { useRef, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { Float, Text } from "@react-three/drei";
+import { Float, Text, Trail } from "@react-three/drei";
 
 interface BirdProps {
   position: [number, number, number];
@@ -17,7 +17,6 @@ export function Bird({ position, color, name, isLocal, score = 0 }: BirdProps) {
   const meshRef = useRef<THREE.Group>(null);
   const bodyRef = useRef<THREE.Mesh>(null);
   const wingRef = useRef<THREE.Mesh>(null);
-  const trailRef = useRef<THREE.Mesh>(null);
 
   const getRank = (s: number) => {
     if (s >= 50) return { title: "LEGEND", color: "#f87171" };
@@ -50,14 +49,6 @@ export function Bird({ position, color, name, isLocal, score = 0 }: BirdProps) {
             const squashAmount = Math.abs(velocity) * 0.5;
             bodyRef.current.scale.y = THREE.MathUtils.lerp(bodyRef.current.scale.y, THREE.MathUtils.clamp(1 + squashAmount, 0.7, 1.4), 0.2);
             bodyRef.current.scale.x = bodyRef.current.scale.z = THREE.MathUtils.lerp(bodyRef.current.scale.x, THREE.MathUtils.clamp(1 - squashAmount * 0.5, 0.8, 1.1), 0.2);
-        }
-
-        // Motion Trail Logic
-        if (trailRef.current) {
-            const trailScale = Math.abs(velocity) * 2;
-            trailRef.current.scale.x = THREE.MathUtils.lerp(trailRef.current.scale.x, Math.max(0.1, trailScale), 0.1);
-            trailRef.current.visible = Math.abs(velocity) > 0.01;
-            trailRef.current.rotation.z = -velocity * 0.5;
         }
     }
     
@@ -98,17 +89,15 @@ export function Bird({ position, color, name, isLocal, score = 0 }: BirdProps) {
         </group>
       </Float>
 
-      {/* Motion Trail - Neon Strip */}
-      <mesh ref={trailRef} position={[-0.5, 0, 0]} rotation={[0, 0, 0]}>
-        <planeGeometry args={[1.5, 0.3]} />
-        <meshBasicMaterial 
-            color={color} 
-            transparent 
-            opacity={0.3} 
-            side={THREE.DoubleSide}
-            blending={THREE.AdditiveBlending}
-        />
-      </mesh>
+      {/* Motion Trail - Professional Ribbon */}
+      <Trail
+        width={0.6}
+        length={4}
+        color={color}
+        attenuation={(t) => t * t}
+      >
+        <object3D position={[-0.3, 0, 0]} />
+      </Trail>
 
       {/* Bird Body */}
       <mesh ref={bodyRef} castShadow>

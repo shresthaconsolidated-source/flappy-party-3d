@@ -281,10 +281,14 @@ export default function PlayerPage({ params }: { params: Promise<{ roomId: strin
             padding-right: env(safe-area-inset-right);
         }
         @media (orientation: landscape) {
-            .max-w-sm { max-width: 600px; }
-            .flex-col { flex-direction: row; }
-            .space-y-6 > * + * { margin-top: 0; margin-left: 1.5rem; }
-            .space-y-4 > * + * { margin-top: 0; margin-left: 1rem; }
+            .safe-area-inset {
+                padding-left: max(1rem, env(safe-area-inset-left));
+                padding-right: max(1rem, env(safe-area-inset-right));
+            }
+            .max-w-sm { 
+                max-width: 500px;
+                margin: auto;
+            }
         }
       `}</style>
     </div>
