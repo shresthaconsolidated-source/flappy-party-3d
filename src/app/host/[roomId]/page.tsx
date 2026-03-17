@@ -121,12 +121,18 @@ export default function HostPage({ params }: { params: Promise<{ roomId: string 
                 <span className="text-5xl font-black text-white tracking-[0.2em]">{roomId}</span>
               </div>
               
-              <div className="bg-amber-400/10 rounded-3xl p-6 flex flex-col items-center justify-center border border-amber-400/20 shadow-2xl">
-                <span className="text-[10px] font-black text-amber-400 uppercase tracking-[0.5em] mb-2">World Record</span>
-                <div className="flex items-center gap-3">
+              <div className="bg-amber-400/10 rounded-3xl p-6 flex flex-col items-center justify-center border border-amber-400/20 shadow-2xl relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-400/5 to-transparent pointer-events-none" />
+                <span className="text-[10px] font-black text-amber-400 uppercase tracking-[0.5em] mb-2 relative z-10">World Record</span>
+                <div className="flex items-center gap-3 relative z-10">
                     <Trophy className="w-6 h-6 text-amber-400" />
                     <span className="text-5xl font-black text-amber-400 tracking-tighter italic">{roomState.allTimeBest || 0}</span>
                 </div>
+                {roomState.allTimeBestHolder && (
+                  <p className="mt-2 text-[10px] font-black text-amber-400/60 uppercase tracking-widest relative z-10">
+                    by <span className="text-amber-400/90">{roomState.allTimeBestHolder}</span>
+                  </p>
+                )}
               </div>
 
               <div className="bg-white p-4 rounded-[2.5rem] shadow-2xl flex justify-center border-8 border-white/10">

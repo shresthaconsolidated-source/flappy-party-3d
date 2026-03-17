@@ -20,9 +20,14 @@ export default class FlappyServer implements Server {
   }
 
   async onStart() {
-    const saved = await this.party.storage.get<number>("allTimeBest");
-    if (saved !== undefined) {
-      this.state.allTimeBest = saved;
+    const [savedScore, savedHolder] = await Promise.all([
+      this.party.storage.get<number>("allTimeBest"),
+      this.party.storage.get<string>("allTimeBestHolder")
+    ]);
+
+    if (savedScore !== undefined) {
+      this.state.allTimeBest = savedScore;
+      this.state.allTimeBestHolder = savedHolder || "Unknown";
       this.broadcastState(); // Sync record immediately on wake
     }
 
@@ -122,7 +127,9 @@ export default class FlappyServer implements Server {
           // Persistent All-Time Best
           if (data.score > (this.state.allTimeBest || 0)) {
             this.state.allTimeBest = data.score;
+            this.state.allTimeBestHolder = this.state.players[conn.id].name;
             this.party.storage.put("allTimeBest", data.score);
+            this.party.storage.put("allTimeBestHolder", this.state.allTimeBestHolder);
           }
 
           this.broadcastState();

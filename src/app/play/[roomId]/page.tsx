@@ -187,13 +187,13 @@ export default function PlayerPage({ params }: { params: Promise<{ roomId: strin
                 </div>
                 
                 <div className="hidden sm:flex flex-col gap-1">
-                    <div className="bg-amber-400/10 backdrop-blur-2xl rounded-xl p-1.5 border border-amber-400/20 shadow-2xl flex items-center gap-2">
-                        <Trophy className="w-2.5 h-2.5 text-amber-400" />
-                        <div className="text-right">
-                            <p className="text-[5px] font-black text-amber-400/50 uppercase tracking-[0.2em]">Record</p>
-                            <p className="text-sm font-black text-amber-400 leading-none italic">{roomState.allTimeBest || 0}</p>
-                        </div>
+                <div className="bg-amber-400/10 backdrop-blur-2xl rounded-xl p-1.5 border border-amber-400/20 shadow-2xl flex items-center gap-2">
+                    <Trophy className="w-2.5 h-2.5 text-amber-400" />
+                    <div className="text-right">
+                        <p className="text-[5px] font-black text-amber-400/50 uppercase tracking-[0.2em] leading-none mb-0.5">Record: {roomState.allTimeBestHolder || '...'}</p>
+                        <p className="text-sm font-black text-amber-400 leading-none italic">{roomState.allTimeBest || 0}</p>
                     </div>
+                </div>
                 </div>
             </div>
 
