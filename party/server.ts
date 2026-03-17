@@ -23,6 +23,7 @@ export default class FlappyServer implements Server {
     const saved = await this.party.storage.get<number>("allTimeBest");
     if (saved !== undefined) {
       this.state.allTimeBest = saved;
+      this.broadcastState(); // Sync record immediately on wake
     }
 
     // Periodic pruning to remove "ghost" players even if no messages are sent
@@ -214,8 +215,8 @@ export default class FlappyServer implements Server {
 
     // Calculate next spawn time based on highest score
     const maxScore = Math.max(...Object.values(this.state.players).map(p => p.score), 0);
-    const multiplier = 1 + Math.floor(maxScore / 5) * 0.15;
-    const interval = Math.max(1500, 4000 / multiplier); // Faster spawn as speed increases
+    const multiplier = 1 + Math.floor(maxScore / 10) * 0.15; // Faster spawn every 10 pts
+    const interval = Math.max(1500, 4000 / multiplier);
 
     setTimeout(() => this.spawnObstacleLoop(), interval);
   }

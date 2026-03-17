@@ -27,7 +27,7 @@ const BASE_PIPE_SPEED = 0.02;
 const BIRD_X = 0;
 
 function getDifficultyMultiplier(score: number) {
-  return 1 + Math.floor(score / 5) * 0.15;
+  return 1 + Math.floor(score / 10) * 0.15;
 }
 
 function GameLoop({ roomState, onFlap, onDie, localPlayerId, jumpTrigger, onUpdatePosition, onScoreUpdate, socket }: GameSceneProps) {
