@@ -5,6 +5,40 @@ import { useFrame } from "@react-three/fiber";
 import { Float, ContactShadows } from "@react-three/drei";
 import * as THREE from "three";
 
+function Cloud({ position, speed }: { position: [number, number, number], speed: number }) {
+  const ref = useRef<THREE.Group>(null);
+  
+  useFrame((state) => {
+    if (ref.current) {
+        ref.current.position.x -= speed;
+        if (ref.current.position.x < -25) ref.current.position.x = 25;
+    }
+  });
+
+  return (
+    <Float speed={1.5} rotationIntensity={0.2} floatIntensity={0.5}>
+      <group ref={ref} position={position}>
+        <mesh position={[0, 0, 0]}>
+          <sphereGeometry args={[1, 16, 16]} />
+          <meshStandardMaterial color="#ffffff" transparent opacity={0.8} roughness={1} />
+        </mesh>
+        <mesh position={[0.8, -0.2, 0.2]}>
+          <sphereGeometry args={[0.7, 16, 16]} />
+          <meshStandardMaterial color="#ffffff" transparent opacity={0.8} roughness={1} />
+        </mesh>
+        <mesh position={[-0.7, -0.1, -0.1]}>
+          <sphereGeometry args={[0.8, 16, 16]} />
+          <meshStandardMaterial color="#ffffff" transparent opacity={0.8} roughness={1} />
+        </mesh>
+        <mesh position={[0.2, 0.4, -0.2]}>
+          <sphereGeometry args={[0.6, 16, 16]} />
+          <meshStandardMaterial color="#ffffff" transparent opacity={0.8} roughness={1} />
+        </mesh>
+      </group>
+    </Float>
+  );
+}
+
 function Mountain({ position, scale, color }: { position: [number, number, number], scale: number, color: string }) {
   return (
     <group position={position} scale={[scale, scale, scale]}>

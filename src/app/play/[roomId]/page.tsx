@@ -16,7 +16,10 @@ export default function PlayerPage({ params }: { params: Promise<{ roomId: strin
   const [isAcknowledged, setIsAcknowledged] = useState(false);
   const [persistentBest, setPersistentBest] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [selectedColor, setSelectedColor] = useState("#38bdf8");
   const localPlayerId = socket?.id;
+
+  const BIRD_COLORS = ["#f87171", "#38bdf8", "#4ade80", "#fbbf24", "#a78bfa", "#f472b6", "#ffffff"];
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -52,7 +55,7 @@ export default function PlayerPage({ params }: { params: Promise<{ roomId: strin
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim()) {
-      join(name);
+      join(name, selectedColor);
       setHasJoined(true);
     }
   };
