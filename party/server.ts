@@ -24,6 +24,11 @@ export default class FlappyServer implements Server {
     if (saved !== undefined) {
       this.state.allTimeBest = saved;
     }
+
+    // Periodic pruning to remove "ghost" players even if no messages are sent
+    setInterval(() => {
+      this.broadcastState();
+    }, 5000);
   }
 
   onConnect(conn: Connection) {
