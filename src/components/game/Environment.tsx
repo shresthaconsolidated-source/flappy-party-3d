@@ -40,16 +40,31 @@ function Cloud({ position, speed }: { position: [number, number, number], speed:
 }
 
 function Mountain({ position, scale, color }: { position: [number, number, number], scale: number, color: string }) {
+  const ruggedColor = new THREE.Color(color).multiplyScalar(0.8).getHex();
   return (
     <group position={position} scale={[scale, scale, scale]}>
+      {/* Central Peak */}
       <mesh castShadow receiveShadow>
-        <coneGeometry args={[5, 12, 4]} />
-        <meshStandardMaterial color={color} roughness={1} />
+        <coneGeometry args={[5, 12, 5]} />
+        <meshStandardMaterial color={color} roughness={1} flatShading />
       </mesh>
-      {/* Snow Cap */}
+      {/* Rugged Side Peaks */}
+      <mesh position={[3, -2, 2]} scale={0.6} castShadow>
+        <coneGeometry args={[4, 10, 5]} />
+        <meshStandardMaterial color={ruggedColor} roughness={1} flatShading />
+      </mesh>
+      <mesh position={[-3, -3, -2]} scale={0.7} castShadow>
+        <coneGeometry args={[4, 10, 5]} />
+        <meshStandardMaterial color={ruggedColor} roughness={1} flatShading />
+      </mesh>
+      {/* Snow Caps */}
       <mesh position={[0, 4.5, 0]}>
-        <coneGeometry args={[1.5, 3.6, 4]} />
-        <meshStandardMaterial color="white" roughness={0.5} />
+        <coneGeometry args={[1.5, 3.6, 5]} />
+        <meshStandardMaterial color="white" roughness={0.5} flatShading />
+      </mesh>
+      <mesh position={[3, 1.5, 2]} scale={0.6}>
+        <coneGeometry args={[1.5, 3.6, 5]} />
+        <meshStandardMaterial color="white" roughness={0.5} flatShading />
       </mesh>
     </group>
   );
@@ -58,14 +73,26 @@ function Mountain({ position, scale, color }: { position: [number, number, numbe
 function Tree({ position }: { position: [number, number, number] }) {
   return (
     <group position={position}>
+      {/* Trunk */}
       <mesh position={[0, 0.5, 0]} castShadow>
-        <cylinderGeometry args={[0.1, 0.15, 1, 8]} />
-        <meshStandardMaterial color="#4d2c19" />
+        <cylinderGeometry args={[0.12, 0.18, 1.2, 8]} />
+        <meshStandardMaterial color="#3f2314" roughness={1} />
       </mesh>
-      <mesh position={[0, 1.2, 0]} castShadow>
-        <coneGeometry args={[0.5, 1.2, 8]} />
-        <meshStandardMaterial color="#065f46" />
-      </mesh>
+      {/* Organic Foliage Cluster */}
+      <group position={[0, 1.2, 0]}>
+        <mesh position={[0, 0.4, 0]} castShadow>
+            <sphereGeometry args={[0.6, 8, 8]} />
+            <meshStandardMaterial color="#064e3b" roughness={1} flatShading />
+        </mesh>
+        <mesh position={[0.3, 0, 0.2]} castShadow>
+            <sphereGeometry args={[0.4, 8, 8]} />
+            <meshStandardMaterial color="#065f46" roughness={1} flatShading />
+        </mesh>
+        <mesh position={[-0.3, 0.1, -0.2]} castShadow>
+            <sphereGeometry args={[0.4, 8, 8]} />
+            <meshStandardMaterial color="#065f46" roughness={1} flatShading />
+        </mesh>
+      </group>
     </group>
   );
 }
@@ -101,8 +128,17 @@ export function Environment() {
       <color attach="background" args={[bgColor.current.getHex()]} />
       <fog attach="fog" args={[fogColor.current.getHex(), 15, 60]} />
       
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[30, 40, 20]} intensity={1.5} castShadow />
+      <ambientLight intensity={0.4} />
+      <directionalLight position={[30, 40, 20]} intensity={1.5} castShadow shadow-camera-far={100} />
+      
+      {/* Stylized Sun/Moon */}
+      <group position={[20, 25, -50]}>
+        <mesh>
+            <sphereGeometry args={[4, 32, 32]} />
+            <meshBasicMaterial color="#fef08a" />
+        </mesh>
+        <pointLight intensity={2} color="#fef08a" distance={100} />
+      </group>
       
       {/* Distant Mountains (Parallax Layer 1) */}
       <group ref={sceneryRef}>

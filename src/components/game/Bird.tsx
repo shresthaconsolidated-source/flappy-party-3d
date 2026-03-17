@@ -36,7 +36,8 @@ export function Bird({ position, color, name, isLocal, score = 0 }: BirdProps) {
 
         meshRef.current.position.y = THREE.MathUtils.lerp(meshRef.current.position.y, position[1], 0.3);
 
-        const targetRotationX = -velocity * 0.2;
+        // Tilt based on velocity (Juice)
+        const targetRotationX = -velocity * 0.3;
         meshRef.current.rotation.x = THREE.MathUtils.lerp(meshRef.current.rotation.x, targetRotationX, 0.15);
         
         const targetRotationZ = velocity * 0.1;
@@ -52,9 +53,16 @@ export function Bird({ position, color, name, isLocal, score = 0 }: BirdProps) {
         }
     }
     
-    if (wingRef.current) {
-        const wingSpeed = isLocal ? 20 : 15;
-        wingRef.current.rotation.x = Math.sin(state.clock.elapsedTime * wingSpeed) * 0.6;
+    // Wing Flapping Animation
+    if (meshRef.current) {
+        const wingL = meshRef.current.getObjectByName("wingL");
+        const wingR = meshRef.current.getObjectByName("wingR");
+        if (wingL && wingR) {
+            const flapSpeed = isLocal ? 25 : 18;
+            const flapAngle = Math.sin(state.clock.elapsedTime * flapSpeed) * 0.8;
+            wingL.rotation.z = flapAngle;
+            wingR.rotation.z = -flapAngle;
+        }
     }
   });
 
@@ -89,51 +97,71 @@ export function Bird({ position, color, name, isLocal, score = 0 }: BirdProps) {
         </group>
       </Float>
 
-      {/* Motion Trail - Professional Ribbon */}
-      <Trail
-        width={0.6}
-        length={4}
-        color={color}
-        attenuation={(t) => t * t}
-      >
+      {/* Motion Trail */}
+      <Trail width={0.4} length={3} color={color} attenuation={(t) => t * t}>
         <object3D position={[-0.3, 0, 0]} />
       </Trail>
 
-      {/* Bird Body */}
-      <mesh ref={bodyRef} castShadow>
-        <sphereGeometry args={[0.35, 64, 64]} />
-        <meshStandardMaterial 
-          color={color} 
-          roughness={0.05} 
-          metalness={0.8} 
-          emissive={color}
-          emissiveIntensity={isLocal ? 0.6 : 0.2}
-        />
-      </mesh>
+      {/* Bird Body Structure */}
+      <group>
+        {/* Main Body */}
+        <mesh ref={bodyRef} castShadow>
+            <sphereGeometry args={[0.35, 32, 32]} />
+            <meshStandardMaterial 
+                color={color} 
+                roughness={0.2} 
+                metalness={0.5} 
+                emissive={color}
+                emissiveIntensity={isLocal ? 0.3 : 0.1}
+            />
+        </mesh>
 
-      {/* Eye - More detailed */}
-      <group position={[0.2, 0.15, 0.2]}>
-        <mesh>
-          <sphereGeometry args={[0.08, 32, 32]} />
-          <meshStandardMaterial color="white" />
+        {/* Tail Feathers */}
+        <mesh position={[-0.35, 0, 0]} rotation={[0, 0, Math.PI / 4]}>
+            <boxGeometry args={[0.2, 0.2, 0.05]} />
+            <meshStandardMaterial color={color} roughness={0.5} />
         </mesh>
-        <mesh position={[0.05, 0, 0]}>
-          <sphereGeometry args={[0.04, 32, 32]} />
-          <meshStandardMaterial color="black" />
+
+        {/* Beak */}
+        <mesh position={[0.35, -0.05, 0]} rotation={[0, 0, -Math.PI / 2]}>
+            <coneGeometry args={[0.1, 0.25, 8]} />
+            <meshStandardMaterial color="#fbbf24" roughness={0.3} />
         </mesh>
+
+        {/* Eyes */}
+        <group position={[0.2, 0.1, 0]}>
+            <mesh position={[0, 0, 0.18]}>
+                <sphereGeometry args={[0.08, 16, 16]} />
+                <meshStandardMaterial color="white" />
+                <mesh position={[0.05, 0, 0.02]}>
+                    <sphereGeometry args={[0.04, 8, 8]} />
+                    <meshStandardMaterial color="black" />
+                </mesh>
+            </mesh>
+            <mesh position={[0, 0, -0.18]}>
+                <sphereGeometry args={[0.08, 16, 16]} />
+                <meshStandardMaterial color="white" />
+                <mesh position={[0.05, 0, -0.02]}>
+                    <sphereGeometry args={[0.04, 8, 8]} />
+                    <meshStandardMaterial color="black" />
+                </mesh>
+            </mesh>
+        </group>
+
+        {/* Wings (Animated) */}
+        <group name="wingL" position={[0, 0, 0.3]}>
+            <mesh position={[0, 0, 0.15]}>
+                <boxGeometry args={[0.3, 0.02, 0.3]} />
+                <meshStandardMaterial color={color} roughness={0.4} />
+            </mesh>
+        </group>
+        <group name="wingR" position={[0, 0, -0.3]}>
+            <mesh position={[0, 0, -0.15]}>
+                <boxGeometry args={[0.3, 0.02, 0.3]} />
+                <meshStandardMaterial color={color} roughness={0.4} />
+            </mesh>
+        </group>
       </group>
-
-      {/* Beak */}
-      <mesh position={[0.4, -0.05, 0]} rotation={[0, 0, -Math.PI / 2]}>
-        <coneGeometry args={[0.12, 0.25, 32]} />
-        <meshStandardMaterial color="#f59e0b" roughness={0.2} />
-      </mesh>
-
-      {/* Wing */}
-      <mesh ref={wingRef} position={[-0.1, 0, 0.35]} rotation={[0, 0, 0]}>
-        <boxGeometry args={[0.25, 0.05, 0.35]} />
-        <meshStandardMaterial color={color} roughness={0.2} />
-      </mesh>
       
       {isLocal && (
         <group>
