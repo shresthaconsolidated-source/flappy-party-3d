@@ -26,9 +26,12 @@ export default class FlappyServer implements Server {
     ]);
 
     if (savedScore !== undefined) {
+      console.log(`Loaded World Record: ${savedScore} by ${savedHolder}`);
       this.state.allTimeBest = savedScore;
       this.state.allTimeBestHolder = savedHolder || "Unknown";
       this.broadcastState(); // Sync record immediately on wake
+    } else {
+      console.log("No World Record found in storage.");
     }
 
     // Periodic pruning to remove "ghost" players even if no messages are sent
@@ -83,9 +86,21 @@ export default class FlappyServer implements Server {
 
     switch (data.type) {
       case 'JOIN':
+        const name = data.name || `Player ${conn.id.slice(0, 4)}`;
+        
+        // Remove any existing player with the same name to prevent duplicates/ghosts
+        let removedOld = false;
+        for (const oldId in this.state.players) {
+            if (this.state.players[oldId].name === name && oldId !== conn.id) {
+                console.log(`Replacing old session for ${name} (${oldId} -> ${conn.id})`);
+                delete this.state.players[oldId];
+                removedOld = true;
+            }
+        }
+
         this.state.players[conn.id] = {
           id: conn.id,
-          name: data.name || `Player ${conn.id.slice(0, 4)}`,
+          name: name,
           score: 0,
           highScore: 0,
           isAlive: true,
@@ -97,6 +112,7 @@ export default class FlappyServer implements Server {
         if (Object.keys(this.state.players).length === 1 && this.state.state === 'WAITING') {
           this.startCountdown(15);
         }
+        
         this.broadcastState();
         break;
 

@@ -40,40 +40,44 @@ function Cloud({ position, speed }: { position: [number, number, number], speed:
 }
 
 function Mountain({ position, scale, color, detail = 1 }: { position: [number, number, number], scale: number, color: string, detail?: number }) {
-  const ruggedColor = new THREE.Color(color).multiplyScalar(0.7).getHex();
-  const highlightColor = new THREE.Color(color).addScalar(0.05).getHex();
+  const ruggedColor = new THREE.Color(color).multiplyScalar(0.65).getHex();
+  const highlightColor = new THREE.Color(color).addScalar(0.08).getHex();
   
   return (
     <group position={position} scale={[scale, scale, scale]}>
-      {/* The main rugged mass */}
+      {/* Heavy-duty rugged mass using level 2 subdivision for realism */}
       <mesh castShadow receiveShadow>
-        <icosahedronGeometry args={[5, detail]} />
+        <icosahedronGeometry args={[5, 2]} />
         <meshStandardMaterial color={color} roughness={1} flatShading />
       </mesh>
       
-      {/* Adding secondary peaks to create a 'Range' look instead of a 'Cone' */}
-      <mesh position={[3.5, -1, 2.5]} scale={0.6} rotation={[0.4, 1.2, 0.5]} castShadow>
-        <icosahedronGeometry args={[4.5, detail]} />
-        <meshStandardMaterial color={ruggedColor} roughness={1} flatShading />
-      </mesh>
-      <mesh position={[-4, -2, -1.5]} scale={0.75} rotation={[-0.2, 0.7, -0.4]} castShadow>
-        <icosahedronGeometry args={[4.8, detail]} />
+      {/* Secondary jagged peaks peaking through */}
+      <mesh position={[2, 1, 1]} scale={0.7} rotation={[0.4, 0.5, 0.2]} castShadow>
+        <icosahedronGeometry args={[4, 2]} />
         <meshStandardMaterial color={highlightColor} roughness={1} flatShading />
       </mesh>
-      <mesh position={[1, -3, -4]} scale={0.8} rotation={[0, 0, 0.8]} castShadow>
-        <icosahedronGeometry args={[4, detail]} />
+      <mesh position={[-3, -1, 2]} scale={0.65} rotation={[-0.2, 0.8, -0.4]} castShadow>
+        <icosahedronGeometry args={[4.5, 2]} />
+        <meshStandardMaterial color={ruggedColor} roughness={1} flatShading />
+      </mesh>
+      <mesh position={[1, -2, -3]} scale={0.8} rotation={[0.5, 0.2, 0.8]} castShadow>
+        <icosahedronGeometry args={[4.2, 2]} />
         <meshStandardMaterial color={ruggedColor} roughness={1} flatShading />
       </mesh>
       
-      {/* Snowline - Organic caps */}
-      <group position={[0, 3.5, 0]}>
-        <mesh scale={0.4} rotation={[0.5, 0.2, 0]}>
-            <icosahedronGeometry args={[6, detail]} />
-            <meshStandardMaterial color="white" roughness={0.4} flatShading />
+      {/* Organic Snowcaps - Cluster of icosahedrons for a 'melting' look */}
+      <group position={[0, 4, 0]}>
+        <mesh scale={0.35} rotation={[0.5, 0.2, 0]}>
+            <icosahedronGeometry args={[6, 2]} />
+            <meshStandardMaterial color="white" roughness={0.3} flatShading />
         </mesh>
-        <mesh position={[1.2, -1, 0.8]} scale={0.25} rotation={[0, 0.5, 0.2]}>
-            <icosahedronGeometry args={[5, detail]} />
-            <meshStandardMaterial color="white" roughness={0.4} flatShading />
+        <mesh position={[1, -1.2, 0.5]} scale={0.22} rotation={[0, 0.4, 0.3]}>
+            <icosahedronGeometry args={[5, 2]} />
+            <meshStandardMaterial color="white" roughness={0.3} flatShading />
+        </mesh>
+        <mesh position={[-0.8, -1.5, -0.4]} scale={0.2} rotation={[0.2, 0, 0.5]}>
+            <icosahedronGeometry args={[4.5, 2]} />
+            <meshStandardMaterial color="white" roughness={0.3} flatShading />
         </mesh>
       </group>
     </group>
