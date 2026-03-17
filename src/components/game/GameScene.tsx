@@ -1,12 +1,13 @@
 "use client";
 
 import { Canvas, useFrame } from "@react-three/fiber";
-import { useState, useRef, useEffect, useCallback, Suspense } from "react";
+import { useState, useRef, useEffect, useCallback, Suspense, useMemo } from "react";
 import * as THREE from "three";
 import { Bird } from "./Bird";
 import { Pipe } from "./Pipe";
 import { Environment } from "./Environment";
 import { Particles } from "./Particles";
+import { Text, ContactShadows } from "@react-three/drei";
 import type { RoomState, Player } from "../../types/game";
 
 interface GameSceneProps {
@@ -14,35 +15,57 @@ interface GameSceneProps {
   onFlap?: () => void;
   onDie?: (score: number) => void;
   localPlayerId?: string;
-  jumpTrigger?: number; // New prop to trigger jumps from parent
+  jumpTrigger?: number;
   onUpdatePosition?: (y: number) => void;
   onScoreUpdate?: (score: number) => void;
+  socket?: any;
 }
 
-const BASE_GRAVITY = -0.0009; // Lighter feel
-const BASE_JUMP_FORCE = 0.04; 
-const BASE_PIPE_SPEED = 0.02; 
+const BASE_GRAVITY = -0.0009;
+const BASE_JUMP_FORCE = 0.04;
+const BASE_PIPE_SPEED = 0.02;
 const BIRD_X = 0;
 
 function getDifficultyMultiplier(score: number) {
-  // Increase speed by 15% every 5 points
   return 1 + Math.floor(score / 5) * 0.15;
 }
 
-function GameLoop({ roomState, onFlap, onDie, localPlayerId, jumpTrigger, onUpdatePosition, onScoreUpdate }: GameSceneProps) {
+function GameLoop({ roomState, onFlap, onDie, localPlayerId, jumpTrigger, onUpdatePosition, onScoreUpdate, socket }: GameSceneProps) {
   const [localY, setLocalY] = useState(0);
   const velocityRef = useRef(0);
   const positionYRef = useRef(0);
   const scoreRef = useRef(0);
   const isAliveRef = useRef(true);
   const scrollXRef = useRef(0);
-  const lastTimeRef = useRef(Date.now());
   const passedPipesRef = useRef<Set<string>>(new Set());
   const targetYRef = useRef<Record<string, number>>({});
   const smoothedYRef = useRef<Record<string, number>>({});
   const [tick, setTick] = useState(0);
   const [jumpKey, setJumpKey] = useState(0);
   const [crashPos, setCrashPos] = useState<[number, number, number] | null>(null);
+  const shakeRef = useRef(0);
+  const [flash, setFlash] = useState(0);
+  const [emojis, setEmojis] = useState<{ id: string, char: string, x: number, startTime: number }[]>([]);
+
+  // Listen for Emojis
+  useEffect(() => {
+    if (!socket) return;
+    const handleMessage = (e: MessageEvent) => {
+        try {
+            const data = JSON.parse(e.data);
+            if (data.type === 'EMOJI') {
+                setEmojis(prev => [...prev.slice(-10), { 
+                    id: Math.random().toString(), 
+                    char: data.emoji, 
+                    x: (Math.random() - 0.5) * 8,
+                    startTime: Date.now() 
+                }]);
+            }
+        } catch(err) {}
+    };
+    socket.addEventListener('message', handleMessage);
+    return () => socket.removeEventListener('message', handleMessage);
+  }, [socket]);
 
   useEffect(() => {
     if (roomState?.state === 'STARTING') {
@@ -52,25 +75,33 @@ function GameLoop({ roomState, onFlap, onDie, localPlayerId, jumpTrigger, onUpda
         isAliveRef.current = true;
         scrollXRef.current = 0;
         passedPipesRef.current.clear();
-        lastTimeRef.current = Date.now();
         setLocalY(0);
-        setCrashPos(null); // Reset crash position
+        setCrashPos(null);
+        shakeRef.current = 0;
+        setFlash(0);
     }
   }, [roomState?.state]);
+
+  const triggerDeath = useCallback(() => {
+      if (!isAliveRef.current) return;
+      isAliveRef.current = false;
+      shakeRef.current = 1.0;
+      setFlash(1);
+      setCrashPos([BIRD_X, positionYRef.current, 0]);
+      onDie?.(scoreRef.current);
+  }, [onDie]);
 
   const jump = useCallback(() => {
     if (roomState?.state === 'PLAYING' && isAliveRef.current) {
         const multiplier = getDifficultyMultiplier(scoreRef.current);
         velocityRef.current = BASE_JUMP_FORCE * multiplier;
         setJumpKey(k => k + 1);
+        shakeRef.current = Math.max(shakeRef.current, 0.1);
     }
   }, [roomState?.state]);
 
-  // Handle local jump trigger from prop
   useEffect(() => {
-    if (jumpTrigger) {
-        jump();
-    }
+    if (jumpTrigger) jump();
   }, [jumpTrigger, jump]);
 
   const handleInput = useCallback(() => {
@@ -89,10 +120,19 @@ function GameLoop({ roomState, onFlap, onDie, localPlayerId, jumpTrigger, onUpda
   }, [handleInput]);
 
   useFrame((state, delta) => {
+    // Decay juice
+    if (shakeRef.current > 0) shakeRef.current -= delta * 3;
+    if (flash > 0) setFlash(f => Math.max(0, f - delta * 4));
+
+    // Apply Shake
+    if (shakeRef.current > 0) {
+        state.camera.position.x += (Math.random() - 0.5) * shakeRef.current * 0.4;
+        state.camera.position.y += (Math.random() - 0.5) * shakeRef.current * 0.4;
+    }
+
     const isPlayer = !!localPlayerId;
     const isPlaying = roomState?.state === 'PLAYING';
 
-    // 1. Calculate current speed based on score (Universal for sync)
     const maxScore = roomState ? Math.max(...Object.values(roomState.players).map(p => p.score), 0) : 0;
     const effectiveScore = (isPlayer && isAliveRef.current) ? scoreRef.current : maxScore;
     
@@ -101,95 +141,57 @@ function GameLoop({ roomState, onFlap, onDie, localPlayerId, jumpTrigger, onUpda
     const currentGravity = BASE_GRAVITY * multiplier;
 
     if (isPlayer && isAliveRef.current && isPlaying) {
-        // 2. Physics (only if actually playing)
         velocityRef.current += currentGravity;
         positionYRef.current += velocityRef.current;
-        
-        // Floor/Ceiling collision (Bird radius effectively 0.35)
-        if (positionYRef.current < -4.65 || positionYRef.current > 4.65) {
-            isAliveRef.current = false;
-            onDie?.(scoreRef.current);
-        }
+        if (positionYRef.current < -4.65 || positionYRef.current > 4.65) triggerDeath();
     }
 
-    // 3. Accumulate scrollX to prevent jumps when speed changes (Everyone needs this)
     if (isPlaying) {
         scrollXRef.current += currentPipeSpeed * 60 * delta;
     }
 
     if (isPlayer && isAliveRef.current && isPlaying) {
-        // 4. Scoring & Collision
-        roomState.obstacles.forEach(pipe => {
+        roomState!.obstacles.forEach(pipe => {
             const pipeX = pipe.x - scrollXRef.current;
-            
-            // Scoring
             if (pipeX < BIRD_X && !passedPipesRef.current.has(pipe.id)) {
                 passedPipesRef.current.add(pipe.id);
                 scoreRef.current += 1;
                 onScoreUpdate?.(scoreRef.current);
             }
-
-            // Collision (Bird radius: 0.35, Pipe Cap radius: 0.6, Gap: 2.5/2 = 1.25)
-            // Horizontal check (0.35 + 0.6 = 0.95, using 0.9 for a slightly more forgiving but tight feel)
             if (Math.abs(pipeX - BIRD_X) < 0.9) {
-                // Vertical check (1.25 - 0.35 = 0.9)
-                if (positionYRef.current > pipe.gapY + 0.9 || positionYRef.current < pipe.gapY - 0.9) {
-                    isAliveRef.current = false;
-                    onDie?.(scoreRef.current);
-                }
+                if (positionYRef.current > pipe.gapY + 0.9 || positionYRef.current < pipe.gapY - 0.9) triggerDeath();
             }
         });
     }
 
-    // 5. Update smoothed positions for others (Host/Spectator side)
+    // Sync others
     if (roomState) {
         Object.values(roomState.players).forEach(p => {
             if (p.id !== localPlayerId) {
                 targetYRef.current[p.id] = p.position[1];
-                if (smoothedYRef.current[p.id] === undefined) {
-                    smoothedYRef.current[p.id] = p.position[1];
-                }
-                // Snappier, higher-fidelity interpolation
-                smoothedYRef.current[p.id] = THREE.MathUtils.lerp(
-                    smoothedYRef.current[p.id],
-                    targetYRef.current[p.id],
-                    0.35 // Increased from 0.2 for better sync
-                );
+                smoothedYRef.current[p.id] = THREE.MathUtils.lerp(smoothedYRef.current[p.id] ?? p.position[1], targetYRef.current[p.id], 0.35);
             }
         });
     }
 
-    // 6. Cinematic Camera Follow (Professionally smoothed)
+    // Camera follow
     if (!isPlayer && isPlaying) {
         const aliveBirds = Object.values(roomState?.players || {}).filter(p => p.isAlive);
         if (aliveBirds.length > 0) {
             const avgY = aliveBirds.reduce((acc, p) => acc + (p.id === localPlayerId ? positionYRef.current : (smoothedYRef.current[p.id] || 0)), 0) / aliveBirds.length;
-            const targetCamY = Math.min(Math.max(avgY * 0.5, -2), 2); // Dynamic follow with limits
+            const targetCamY = Math.min(Math.max(avgY * 0.5, -2), 2);
             state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, targetCamY, 0.05);
         }
-        
-        // Subtle sway
-        state.camera.position.x = Math.sin(state.clock.elapsedTime * 0.3) * 0.1;
-        state.camera.lookAt(2, 0, 0); // Look slightly ahead for professionalism
+        state.camera.lookAt(2, 0, 0);
     }
 
-    // 7. Render update
-    if (isPlayer && isAliveRef.current) {
-        setLocalY(positionYRef.current);
-    } else {
-        // Force host to re-render to update pipe/other bird positions at 60fps
-        setTick(t => t + 1);
-    }
+    if (isPlayer && isAliveRef.current) setLocalY(positionYRef.current);
+    else setTick(t => t + 1);
   });
 
-  // Broadcast position periodically (limit frequency to avoid server flood)
   useEffect(() => {
     if (roomState?.state !== 'PLAYING' || !isAliveRef.current || !onUpdatePosition) return;
-
-    const interval = setInterval(() => {
-        onUpdatePosition(positionYRef.current);
-    }, 150); // Lowered frequency to 6.6fps to save bandwidth
-
+    const interval = setInterval(() => onUpdatePosition(positionYRef.current), 100);
     return () => clearInterval(interval);
   }, [roomState?.state, onUpdatePosition]);
 
@@ -197,92 +199,58 @@ function GameLoop({ roomState, onFlap, onDie, localPlayerId, jumpTrigger, onUpda
     <>
       <Environment />
       
-      {/* Other Players */}
+      {/* Others */}
       {roomState && Object.values(roomState.players).map(player => {
-        if (player.id === localPlayerId) return null;
-        if (!player.isAlive) return null;
-        
-        const y = smoothedYRef.current[player.id] ?? player.position[1];
-        
+        if (player.id === localPlayerId || !player.isAlive) return null;
         return (
           <Bird 
             key={player.id} 
-            position={[BIRD_X, y, 0]} 
+            position={[BIRD_X, smoothedYRef.current[player.id] ?? player.position[1], 0]} 
             color={player.color} 
             name={player.name} 
+            score={player.score}
           />
         );
       })}
 
-      {/* Local Player */}
+      {/* Local */}
       {roomState?.players[localPlayerId || '']?.isAlive && (
         <Bird 
           position={[BIRD_X, localY, 0]} 
           color={roomState.players[localPlayerId!].color} 
           name={roomState.players[localPlayerId!].name}
+          score={roomState.players[localPlayerId!].score}
           isLocal
         />
       )}
 
-      {/* Particles */}
-      {jumpKey > 0 && (
-          <Particles 
-            key={`jump-${jumpKey}`} 
-            position={[BIRD_X, localY - 0.2, 0]} 
-            color="#ffffff" 
-            type="jump" 
-            count={12}
-          />
-      )}
-      {crashPos && (
-          <Particles 
-            position={crashPos} 
-            color="#ef4444" 
-            type="crash" 
-            count={50}
-          />
-      )}
+      {/* Floating Emojis */}
+      {emojis.map(e => {
+        const age = (Date.now() - e.startTime) / 2000;
+        if (age > 1) return null;
+        return (
+          <Text key={e.id} position={[e.x, -2 + age * 8, -2]} fontSize={0.6} fillOpacity={1 - age}>
+            {e.char}
+          </Text>
+        );
+      })}
 
-      {/* Pipes */}
-      {roomState?.obstacles.map(pipe => (
-          <Pipe key={pipe.id} x={pipe.x - scrollXRef.current} gapY={pipe.gapY} />
-      ))}
+      <Particles key={`j-${jumpKey}`} position={[BIRD_X, localY, 0]} color="#fff" type="jump" count={10} />
+      {crashPos && <Particles position={crashPos} color="#f00" type="crash" count={40} />}
+      {roomState?.obstacles.map(pipe => <Pipe key={pipe.id} x={pipe.x - scrollXRef.current} gapY={pipe.gapY} />)}
     </>
   );
 }
 
 export function GameScene(props: GameSceneProps) {
-    const score = props.roomState?.players[props.localPlayerId!]?.score || 0;
-    
-    return (
-        <div className="w-full h-full bg-slate-950 overflow-hidden relative">
-            <Canvas shadows camera={{ position: [0, 0, 10], fov: 50 }}>
-                <Suspense fallback={null}>
-                    <GameLoop {...props} />
-                </Suspense>
-            </Canvas>
-            
-            {/* HUD - Premium Glassmorphism */}
-            <div className="absolute top-10 left-10 pointer-events-none">
-                {props.roomState?.state === 'PLAYING' && (
-                    <div className="bg-white/10 backdrop-blur-3xl rounded-[2rem] p-6 shadow-2xl border border-white/20 animate-in fade-in zoom-in duration-500">
-                        <div className="flex flex-col">
-                            <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em] mb-1">Score</span>
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-6xl font-black text-white tracking-tighter italic leading-none">
-                                    {Math.floor(score)}
-                                </span>
-                                <span className="text-xl font-black text-white/20 tracking-tighter italic leading-none">
-                                    PTS
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* Vignette Overlay */}
-            <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_150px_rgba(0,0,0,0.5)]" />
-        </div>
-    );
+  return (
+    <div className="w-full h-full bg-slate-950 overflow-hidden relative">
+      <Canvas shadows camera={{ position: [5, 0, 12], fov: 45 }} dpr={[1, 2]}>
+        <Suspense fallback={null}>
+          <GameLoop {...props} />
+        </Suspense>
+      </Canvas>
+      <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_150px_rgba(0,0,0,0.4)]" />
+    </div>
+  );
 }

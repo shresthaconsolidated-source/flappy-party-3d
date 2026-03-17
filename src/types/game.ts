@@ -30,7 +30,8 @@ export type ServerMessage =
   | { type: 'PLAYER_MOVED'; id: string; y: number }
   | { type: 'GAME_START'; startTime: number }
   | { type: 'PLAYER_FLAP'; playerId: string }
-  | { type: 'PLAYER_DIED'; playerId: string; score: number };
+  | { type: 'PLAYER_DIED'; playerId: string; score: number }
+  | { type: 'EMOJI'; emoji: string; playerId: string };
 
 export type ClientMessage =
   | { type: 'JOIN'; name: string }
@@ -39,4 +40,5 @@ export type ClientMessage =
   | { type: 'UPDATE_SCORE'; score: number }
   | { type: 'START_GAME' }
   | { type: 'RESTART' }
-  | { type: 'UPDATE_POSITION'; y: number };
+  | { type: 'UPDATE_POSITION'; y: number }
+  | { type: 'EMOJI'; emoji: string };

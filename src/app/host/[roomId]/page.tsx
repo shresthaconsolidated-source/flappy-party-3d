@@ -8,7 +8,7 @@ import { Users, Trophy } from "lucide-react";
 
 export default function HostPage({ params }: { params: Promise<{ roomId: string }> }) {
   const { roomId } = use(params);
-  const { roomState, updatePosition } = useGameRoom(roomId);
+  const { roomState, updatePosition, socket } = useGameRoom(roomId);
   const [origin, setOrigin] = useState("");
   const [isLocalhost, setIsLocalhost] = useState(false);
   const [password, setPassword] = useState("");
@@ -40,6 +40,26 @@ export default function HostPage({ params }: { params: Promise<{ roomId: string 
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
   const topPlayer = sortedPlayers[0];
   const isPlaying = roomState?.state === 'PLAYING' || roomState?.state === 'GAME_OVER';
+  const [killFeed, setKillFeed] = useState<{ id: string, name: string, time: number }[]>([]);
+
+  // Track deaths for Kill Feed
+  useEffect(() => {
+    if (!roomState) return;
+    const deadPlayers = Object.values(roomState.players).filter(p => !p.isAlive);
+    
+    deadPlayers.forEach(p => {
+        if (!killFeed.find(k => k.id === p.id)) {
+            setKillFeed(prev => [...prev, { id: p.id, name: p.name, time: Date.now() }]);
+        }
+    });
+
+    // Cleanup old messages
+    const now = Date.now();
+    const activeKills = killFeed.filter(k => now - k.time < 5000);
+    if (activeKills.length !== killFeed.length) {
+        setKillFeed(activeKills);
+    }
+  }, [roomState?.players]);
 
   if (!isAuthenticated) {
     return (
@@ -84,7 +104,7 @@ export default function HostPage({ params }: { params: Promise<{ roomId: string 
     <div className="relative w-screen h-screen overflow-hidden bg-sky-900">
       {/* 3D View */}
       <div className="absolute inset-0">
-        <GameScene roomState={roomState} onUpdatePosition={updatePosition} />
+        <GameScene roomState={roomState} onUpdatePosition={updatePosition} socket={socket} />
       </div>
 
       {/* Overlays */}

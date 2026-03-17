@@ -43,7 +43,11 @@ function Cloud({ position, speed }: { position: [number, number, number], speed:
 export function Environment() {
   const floorRef = useRef<THREE.Mesh>(null);
   
-  // Create a procedural grid texture to avoid external asset freezes
+  // Day/Night Cycle State
+  const bgColor = useRef(new THREE.Color('#7dd3fc'));
+  const fogColor = useRef(new THREE.Color('#bae6fd'));
+
+  // Create a procedural grid texture
   const gridTexture = useMemo(() => {
     const canvas = document.createElement('canvas');
     canvas.width = 128;
@@ -63,34 +67,44 @@ export function Environment() {
   }, []);
 
   useFrame((state) => {
+    // Scroll floor
     if (floorRef.current) {
         const material = floorRef.current.material as THREE.MeshStandardMaterial;
         if (material.map) {
-            material.map.offset.x += 0.005; // Smooth scroll
+            material.map.offset.x += 0.005;
         }
     }
+
+    // Smooth Day/Night Cycle (Cycles every 120 seconds)
+    const cycle = (state.clock.elapsedTime % 120) / 120; // 0 to 1
+    const isNight = cycle > 0.5;
+    const intensity = isNight ? Math.sin((cycle - 0.5) * Math.PI) : 0;
+    
+    // Lerp background and fog
+    // Day: #7dd3fc, Night: #0f172a
+    bgColor.current.lerpColors(new THREE.Color('#7dd3fc'), new THREE.Color('#0f172a'), Math.sin(cycle * Math.PI));
+    fogColor.current.lerpColors(new THREE.Color('#bae6fd'), new THREE.Color('#1e293b'), Math.sin(cycle * Math.PI));
   });
 
   return (
     <>
-      {/* Cinematic Sky Gradient */}
-      <color attach="background" args={['#7dd3fc']} />
-      <fog attach="fog" args={['#bae6fd', 10, 50]} />
+      <color attach="background" args={[bgColor.current.getHex()]} />
+      <fog attach="fog" args={[fogColor.current.getHex(), 10, 50]} />
       
       {/* Bright Professional Lighting */}
-      <ambientLight intensity={0.6} />
+      <ambientLight intensity={0.4} />
       <directionalLight
         position={[30, 40, 20]}
-        intensity={2}
+        intensity={1.5}
         castShadow
         shadow-mapSize={[2048, 2048]}
       >
         <orthographicCamera attach="shadow-camera" args={[-20, 20, 20, -20, 0.1, 100]} />
       </directionalLight>
       
-      {/* Atmosphere Boosters */}
-      <pointLight position={[10, 10, -10]} intensity={3} color="#fef08a" />
-      <pointLight position={[-15, 5, 10]} intensity={1.5} color="#bae6fd" />
+      {/* Atmosphere Boosters - Sun/Moon Glow */}
+      <pointLight position={[10, 10, -10]} intensity={2} color="#fef08a" />
+      <pointLight position={[-15, 5, 10]} intensity={1} color="#bae6fd" />
 
       {/* Realistic Procedural Clouds */}
       <Cloud position={[15, 8, -15]} speed={0.005} />
@@ -99,7 +113,7 @@ export function Environment() {
       <Cloud position={[8, 12, -25]} speed={0.004} />
       <Cloud position={[-10, 9, -12]} speed={0.007} />
 
-      {/* Procedural Grid Floor with realistic material */}
+      {/* Procedural Grid Floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -5, 0]} receiveShadow ref={floorRef}>
         <planeGeometry args={[120, 60]} />
         <meshStandardMaterial 
@@ -114,7 +128,7 @@ export function Environment() {
 
       <ContactShadows 
          position={[0, -4.98, 0]} 
-         opacity={0.7} 
+         opacity={0.5} 
          scale={40} 
          blur={3} 
          far={20} 

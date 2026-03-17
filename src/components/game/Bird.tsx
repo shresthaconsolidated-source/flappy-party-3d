@@ -10,45 +10,54 @@ interface BirdProps {
   color: string;
   name: string;
   isLocal?: boolean;
+  score?: number;
 }
 
-export function Bird({ position, color, name, isLocal }: BirdProps) {
+export function Bird({ position, color, name, isLocal, score = 0 }: BirdProps) {
   const meshRef = useRef<THREE.Group>(null);
   const bodyRef = useRef<THREE.Mesh>(null);
   const wingRef = useRef<THREE.Mesh>(null);
+  const trailRef = useRef<THREE.Mesh>(null);
+
+  const getRank = (s: number) => {
+    if (s >= 50) return { title: "LEGEND", color: "#f87171" };
+    if (s >= 20) return { title: "ELITE", color: "#fbbf24" };
+    if (s >= 10) return { title: "PRO", color: "#60a5fa" };
+    return { title: "ROOKIE", color: "#9ca3af" };
+  };
+
+  const rank = getRank(score);
 
   useFrame((state, delta) => {
     if (meshRef.current) {
-        // Calculate velocity-based tilt
         const currentY = meshRef.current.position.y;
         const lastY = meshRef.current.userData.lastY ?? currentY;
         const velocity = (currentY - lastY) / (delta || 1/60);
         meshRef.current.userData.lastY = currentY;
 
-        // Smoothly interpolate to target position
         meshRef.current.position.y = THREE.MathUtils.lerp(meshRef.current.position.y, position[1], 0.3);
 
-        // Advanced Rotation: Tilt + Bank
-        // Tilt up when going up, down when falling
         const targetRotationX = -velocity * 0.2;
         meshRef.current.rotation.x = THREE.MathUtils.lerp(meshRef.current.rotation.x, targetRotationX, 0.15);
         
-        // Add a subtle "banking" effect
         const targetRotationZ = velocity * 0.1;
         meshRef.current.rotation.z = THREE.MathUtils.lerp(meshRef.current.rotation.z, targetRotationZ, 0.1);
 
-        // Breathing animation
         meshRef.current.position.y += Math.sin(state.clock.elapsedTime * 4) * 0.015;
 
         // Squash and Stretch
         if (bodyRef.current) {
             const squashAmount = Math.abs(velocity) * 0.5;
-            const targetScaleY = 1 + squashAmount;
-            const targetScaleXZ = 1 - squashAmount * 0.5;
-            
-            bodyRef.current.scale.y = THREE.MathUtils.lerp(bodyRef.current.scale.y, THREE.MathUtils.clamp(targetScaleY, 0.7, 1.4), 0.2);
-            bodyRef.current.scale.x = THREE.MathUtils.lerp(bodyRef.current.scale.x, THREE.MathUtils.clamp(targetScaleXZ, 0.8, 1.1), 0.2);
-            bodyRef.current.scale.z = THREE.MathUtils.lerp(bodyRef.current.scale.z, THREE.MathUtils.clamp(targetScaleXZ, 0.8, 1.1), 0.2);
+            bodyRef.current.scale.y = THREE.MathUtils.lerp(bodyRef.current.scale.y, THREE.MathUtils.clamp(1 + squashAmount, 0.7, 1.4), 0.2);
+            bodyRef.current.scale.x = bodyRef.current.scale.z = THREE.MathUtils.lerp(bodyRef.current.scale.x, THREE.MathUtils.clamp(1 - squashAmount * 0.5, 0.8, 1.1), 0.2);
+        }
+
+        // Motion Trail Logic
+        if (trailRef.current) {
+            const trailScale = Math.abs(velocity) * 2;
+            trailRef.current.scale.x = THREE.MathUtils.lerp(trailRef.current.scale.x, Math.max(0.1, trailScale), 0.1);
+            trailRef.current.visible = Math.abs(velocity) > 0.01;
+            trailRef.current.rotation.z = -velocity * 0.5;
         }
     }
     
@@ -60,20 +69,46 @@ export function Bird({ position, color, name, isLocal }: BirdProps) {
 
   return (
     <group ref={meshRef} position={position}>
-      {/* Name Tag - Premium Floating */}
+      {/* Rank Title & Name Tag */}
       <Float speed={2} rotationIntensity={0} floatIntensity={0.5}>
-        <Text
-          position={[0, 1, 0]}
-          fontSize={0.25}
-          color="white"
-          anchorX="center"
-          anchorY="middle"
-          outlineWidth={0.02}
-          outlineColor="#000000"
-        >
-          {name}
-        </Text>
+        <group position={[0, 1.2, 0]}>
+            <Text
+              fontSize={0.12}
+              color={rank.color}
+              anchorX="center"
+              anchorY="middle"
+              outlineWidth={0.01}
+              outlineColor="#000000"
+              fontWeight="black"
+              position={[0, 0.25, 0]}
+            >
+              {rank.title}
+            </Text>
+            <Text
+              fontSize={0.25}
+              color="white"
+              anchorX="center"
+              anchorY="middle"
+              outlineWidth={0.02}
+              outlineColor="#000000"
+              fontWeight="black"
+            >
+              {name}
+            </Text>
+        </group>
       </Float>
+
+      {/* Motion Trail - Neon Strip */}
+      <mesh ref={trailRef} position={[-0.5, 0, 0]} rotation={[0, 0, 0]}>
+        <planeGeometry args={[1.5, 0.3]} />
+        <meshBasicMaterial 
+            color={color} 
+            transparent 
+            opacity={0.3} 
+            side={THREE.DoubleSide}
+            blending={THREE.AdditiveBlending}
+        />
+      </mesh>
 
       {/* Bird Body */}
       <mesh ref={bodyRef} castShadow>
@@ -81,9 +116,9 @@ export function Bird({ position, color, name, isLocal }: BirdProps) {
         <meshStandardMaterial 
           color={color} 
           roughness={0.05} 
-          metalness={0.6} 
+          metalness={0.8} 
           emissive={color}
-          emissiveIntensity={isLocal ? 0.4 : 0.1}
+          emissiveIntensity={isLocal ? 0.6 : 0.2}
         />
       </mesh>
 

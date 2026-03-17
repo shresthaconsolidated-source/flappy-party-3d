@@ -106,6 +106,14 @@ export default class FlappyServer implements Server {
       case 'RESTART':
         this.resetGame();
         break;
+
+      case 'EMOJI':
+        this.party.broadcast(JSON.stringify({ 
+            type: 'EMOJI', 
+            emoji: data.emoji, 
+            playerId: conn.id 
+        }));
+        break;
     }
   }
 
