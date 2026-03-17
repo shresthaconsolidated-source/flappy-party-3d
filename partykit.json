@@ -1,0 +1,5 @@
+{
+  "name": "flappy-party-3d",
+  "main": "party/server.ts",
+  "compatibilityDate": "2023-08-02"
+}
