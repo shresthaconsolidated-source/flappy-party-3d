@@ -5,29 +5,77 @@ import { useFrame } from "@react-three/fiber";
 import { Float, ContactShadows } from "@react-three/drei";
 import * as THREE from "three";
 
-function Mountain({ position, scale, color }: { position: [number, number, number], scale: number, color: string }) {
-  const ruggedColor = new THREE.Color(color).multiplyScalar(0.8).getHex();
+function Cloud({ position, speed }: { position: [number, number, number], speed: number }) {
+  const ref = useRef<THREE.Group>(null);
+  
+  useFrame((state) => {
+    if (ref.current) {
+        ref.current.position.x -= speed;
+        if (ref.current.position.x < -25) ref.current.position.x = 25;
+    }
+  });
+
+  return (
+    <Float speed={1.5} rotationIntensity={0.2} floatIntensity={0.5}>
+      <group ref={ref} position={position}>
+        <mesh position={[0, 0, 0]}>
+          <sphereGeometry args={[1, 16, 16]} />
+          <meshStandardMaterial color="#ffffff" transparent opacity={0.6} roughness={1} />
+        </mesh>
+        <mesh position={[0.8, -0.2, 0.2]}>
+          <sphereGeometry args={[0.7, 16, 16]} />
+          <meshStandardMaterial color="#ffffff" transparent opacity={0.6} roughness={1} />
+        </mesh>
+        <mesh position={[-0.7, -0.1, -0.1]}>
+          <sphereGeometry args={[0.8, 16, 16]} />
+          <meshStandardMaterial color="#ffffff" transparent opacity={0.6} roughness={1} />
+        </mesh>
+        <mesh position={[0.2, 0.4, -0.2]}>
+          <sphereGeometry args={[0.6, 16, 16]} />
+          <meshStandardMaterial color="#ffffff" transparent opacity={0.6} roughness={1} />
+        </mesh>
+      </group>
+    </Float>
+  );
+}
+
+function Mountain({ position, scale, color, detail = 1 }: { position: [number, number, number], scale: number, color: string, detail?: number }) {
+  const ruggedColor = new THREE.Color(color).multiplyScalar(0.7).getHex();
+  const highlightColor = new THREE.Color(color).addScalar(0.05).getHex();
+  
   return (
     <group position={position} scale={[scale, scale, scale]}>
-      {/* Central Peak - More organic with Icosahedron */}
-      <mesh castShadow receiveShadow position={[0, 0, 0]} rotation={[0.5, 0.2, 0]}>
-        <icosahedronGeometry args={[4, 1]} />
+      {/* The main rugged mass */}
+      <mesh castShadow receiveShadow>
+        <icosahedronGeometry args={[5, detail]} />
         <meshStandardMaterial color={color} roughness={1} flatShading />
       </mesh>
-      {/* Rugged Side Peaks */}
-      <mesh position={[4, -1, 3]} scale={0.6} castShadow rotation={[0, 1, 0.5]}>
-        <icosahedronGeometry args={[4, 0]} />
+      
+      {/* Adding secondary peaks to create a 'Range' look instead of a 'Cone' */}
+      <mesh position={[3.5, -1, 2.5]} scale={0.6} rotation={[0.4, 1.2, 0.5]} castShadow>
+        <icosahedronGeometry args={[4.5, detail]} />
         <meshStandardMaterial color={ruggedColor} roughness={1} flatShading />
       </mesh>
-      <mesh position={[-4, -2, -2]} scale={0.7} castShadow rotation={[0.5, 0, -0.5]}>
-        <icosahedronGeometry args={[4, 0]} />
+      <mesh position={[-4, -2, -1.5]} scale={0.75} rotation={[-0.2, 0.7, -0.4]} castShadow>
+        <icosahedronGeometry args={[4.8, detail]} />
+        <meshStandardMaterial color={highlightColor} roughness={1} flatShading />
+      </mesh>
+      <mesh position={[1, -3, -4]} scale={0.8} rotation={[0, 0, 0.8]} castShadow>
+        <icosahedronGeometry args={[4, detail]} />
         <meshStandardMaterial color={ruggedColor} roughness={1} flatShading />
       </mesh>
-      {/* Snow Caps - Only on high areas */}
-      <mesh position={[0, 3, 0]} scale={0.4}>
-        <icosahedronGeometry args={[4, 1]} />
-        <meshStandardMaterial color="white" roughness={0.5} flatShading />
-      </mesh>
+      
+      {/* Snowline - Organic caps */}
+      <group position={[0, 3.5, 0]}>
+        <mesh scale={0.4} rotation={[0.5, 0.2, 0]}>
+            <icosahedronGeometry args={[6, detail]} />
+            <meshStandardMaterial color="white" roughness={0.4} flatShading />
+        </mesh>
+        <mesh position={[1.2, -1, 0.8]} scale={0.25} rotation={[0, 0.5, 0.2]}>
+            <icosahedronGeometry args={[5, detail]} />
+            <meshStandardMaterial color="white" roughness={0.4} flatShading />
+        </mesh>
+      </group>
     </group>
   );
 }
@@ -35,28 +83,24 @@ function Mountain({ position, scale, color }: { position: [number, number, numbe
 function Tree({ position }: { position: [number, number, number] }) {
   return (
     <group position={position}>
-      {/* Trunk */}
-      <mesh position={[0, 0.5, 0]} castShadow>
-        <cylinderGeometry args={[0.15, 0.22, 1.2, 6]} />
-        <meshStandardMaterial color="#2d1a10" roughness={1} />
+      {/* Realistic Trunk with slight tilt */}
+      <mesh position={[0, 0.6, 0]} castShadow rotation={[0.05, 0, 0.1]}>
+        <cylinderGeometry args={[0.08, 0.18, 1.2, 5]} />
+        <meshStandardMaterial color="#211510" roughness={1} />
       </mesh>
-      {/* Organic Foliage Cluster - Multiple spheres for "leafy" look */}
-      <group position={[0, 1.4, 0]}>
-        <mesh position={[0, 0.2, 0]} castShadow>
-            <sphereGeometry args={[0.7, 5, 5]} />
+      {/* Cluster Foliage - Low poly organic spheres */}
+      <group position={[0, 1.5, 0]}>
+        <mesh castShadow>
+            <icosahedronGeometry args={[0.7, 0]} />
             <meshStandardMaterial color="#064e3b" roughness={1} flatShading />
         </mesh>
-        <mesh position={[0.4, -0.2, 0.3]} castShadow>
-            <sphereGeometry args={[0.5, 4, 4]} />
+        <mesh position={[0.4, -0.2, 0.3]} scale={0.7} castShadow>
+            <icosahedronGeometry args={[0.6, 0]} />
             <meshStandardMaterial color="#065f46" roughness={1} flatShading />
         </mesh>
-        <mesh position={[-0.4, -0.1, -0.2]} castShadow>
-            <sphereGeometry args={[0.5, 4, 4]} />
+        <mesh position={[-0.45, -0.1, -0.25]} scale={0.6} castShadow>
+            <icosahedronGeometry args={[0.65, 0]} />
             <meshStandardMaterial color="#065f46" roughness={1} flatShading />
-        </mesh>
-        <mesh position={[0.1, -0.3, -0.4]} castShadow>
-            <sphereGeometry args={[0.4, 4, 4]} />
-            <meshStandardMaterial color="#059669" roughness={1} flatShading />
         </mesh>
       </group>
     </group>
