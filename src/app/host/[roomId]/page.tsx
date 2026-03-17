@@ -11,17 +11,66 @@ export default function HostPage({ params }: { params: Promise<{ roomId: string 
   const { roomState, updatePosition } = useGameRoom(roomId);
   const [origin, setOrigin] = useState("");
   const [isLocalhost, setIsLocalhost] = useState(false);
+  const [password, setPassword] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     setOrigin(window.location.origin);
     setIsLocalhost(window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
-  }, []);
+    // Check if already authenticated in session
+    if (sessionStorage.getItem(`auth_${roomId}`) === "true") {
+        setIsAuthenticated(true);
+    }
+  }, [roomId]);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password === "Admin123") {
+        setIsAuthenticated(true);
+        sessionStorage.setItem(`auth_${roomId}`, "true");
+        setError("");
+    } else {
+        setError("Invalid Access Key");
+    }
+  };
 
   const joinUrl = `${origin}/play/${roomId}`;
   const players = roomState ? Object.values(roomState.players) : [];
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
   const topPlayer = sortedPlayers[0];
   const isPlaying = roomState?.state === 'PLAYING' || roomState?.state === 'GAME_OVER';
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-950 text-white font-sans p-6">
+        <div className="bg-white/5 backdrop-blur-3xl rounded-[3rem] p-12 shadow-2xl border border-white/10 w-full max-w-md animate-in fade-in zoom-in duration-500">
+           <h1 className="text-4xl font-black mb-8 tracking-tighter uppercase italic leading-none text-center">
+              Host <br/> Access
+           </h1>
+           <form onSubmit={handleLogin} className="space-y-6">
+              <div className="space-y-2">
+                 <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em] ml-4">Access Key</label>
+                 <input 
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-center text-2xl font-black tracking-[0.3em] outline-none focus:border-sky-500 transition-colors"
+                    placeholder="••••••••"
+                 />
+              </div>
+              {error && <p className="text-red-400 text-center text-[10px] font-black uppercase tracking-widest animate-bounce">{error}</p>}
+              <button 
+                type="submit"
+                className="w-full bg-sky-500 hover:bg-sky-400 text-white font-black py-4 rounded-2xl shadow-lg transition-all active:scale-95 uppercase italic tracking-widest"
+              >
+                Launch Dashboard
+              </button>
+           </form>
+        </div>
+      </div>
+    );
+  }
 
   if (!roomState) {
     return (

@@ -11,20 +11,29 @@ function Cloud({ position, speed }: { position: [number, number, number], speed:
   useFrame((state) => {
     if (ref.current) {
         ref.current.position.x -= speed;
-        if (ref.current.position.x < -20) ref.current.position.x = 20;
+        if (ref.current.position.x < -25) ref.current.position.x = 25;
     }
   });
 
   return (
-    <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
+    <Float speed={1.5} rotationIntensity={0.2} floatIntensity={0.5}>
       <group ref={ref} position={position}>
+        {/* Procedural Fluffy Cloud using spheres */}
         <mesh position={[0, 0, 0]}>
-          <boxGeometry args={[1.5, 0.4, 0.8]} />
-          <meshStandardMaterial color="white" roughness={0.1} />
+          <sphereGeometry args={[1, 16, 16]} />
+          <meshStandardMaterial color="#ffffff" transparent opacity={0.8} roughness={1} />
         </mesh>
-        <mesh position={[0.4, 0.3, 0]}>
-          <boxGeometry args={[0.8, 0.4, 0.6]} />
-          <meshStandardMaterial color="white" roughness={0.1} />
+        <mesh position={[0.8, -0.2, 0.2]}>
+          <sphereGeometry args={[0.7, 16, 16]} />
+          <meshStandardMaterial color="#ffffff" transparent opacity={0.8} roughness={1} />
+        </mesh>
+        <mesh position={[-0.7, -0.1, -0.1]}>
+          <sphereGeometry args={[0.8, 16, 16]} />
+          <meshStandardMaterial color="#ffffff" transparent opacity={0.8} roughness={1} />
+        </mesh>
+        <mesh position={[0.2, 0.4, -0.2]}>
+          <sphereGeometry args={[0.6, 16, 16]} />
+          <meshStandardMaterial color="#ffffff" transparent opacity={0.8} roughness={1} />
         </mesh>
       </group>
     </Float>
@@ -64,48 +73,51 @@ export function Environment() {
 
   return (
     <>
-      <color attach="background" args={['#075985']} />
+      {/* Cinematic Sky Gradient */}
+      <color attach="background" args={['#7dd3fc']} />
+      <fog attach="fog" args={['#bae6fd', 10, 50]} />
       
-      {/* Heavy Studio Lighting */}
-      <ambientLight intensity={0.4} />
+      {/* Bright Professional Lighting */}
+      <ambientLight intensity={0.6} />
       <directionalLight
-        position={[20, 20, 10]}
-        intensity={2.5}
+        position={[30, 40, 20]}
+        intensity={2}
         castShadow
-        shadow-mapSize={[1024, 1024]}
+        shadow-mapSize={[2048, 2048]}
       >
-        <orthographicCamera attach="shadow-camera" args={[-15, 15, 15, -15, 0.1, 80]} />
+        <orthographicCamera attach="shadow-camera" args={[-20, 20, 20, -20, 0.1, 100]} />
       </directionalLight>
       
-      {/* Vibrant Spotlights */}
-      <pointLight position={[5, 5, 5]} intensity={3} color="#06b6d4" />
-      <pointLight position={[-8, -2, 5]} intensity={2} color="#f43f5e" />
+      {/* Atmosphere Boosters */}
+      <pointLight position={[10, 10, -10]} intensity={3} color="#fef08a" />
+      <pointLight position={[-15, 5, 10]} intensity={1.5} color="#bae6fd" />
 
-      {/* Moving Clouds in Background */}
-      <Cloud position={[10, 4, -8]} speed={0.01} />
-      <Cloud position={[0, 6, -12]} speed={0.005} />
-      <Cloud position={[-15, 3, -10]} speed={0.015} />
-      <Cloud position={[5, 7, -15]} speed={0.008} />
+      {/* Realistic Procedural Clouds */}
+      <Cloud position={[15, 8, -15]} speed={0.005} />
+      <Cloud position={[0, 10, -20]} speed={0.003} />
+      <Cloud position={[-20, 7, -18]} speed={0.006} />
+      <Cloud position={[8, 12, -25]} speed={0.004} />
+      <Cloud position={[-10, 9, -12]} speed={0.007} />
 
-      {/* Procedural Grid Floor */}
+      {/* Procedural Grid Floor with realistic material */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -5, 0]} receiveShadow ref={floorRef}>
-        <planeGeometry args={[100, 40]} />
+        <planeGeometry args={[120, 60]} />
         <meshStandardMaterial 
             color="#ffffff"
             map={gridTexture}
-            roughness={0.05}
-            metalness={0.6}
+            roughness={0.02}
+            metalness={0.8}
             transparent
-            opacity={0.9}
+            opacity={0.8}
         />
       </mesh>
 
       <ContactShadows 
-         position={[0, -4.95, 0]} 
-         opacity={0.6} 
-         scale={30} 
-         blur={2.5} 
-         far={15} 
+         position={[0, -4.98, 0]} 
+         opacity={0.7} 
+         scale={40} 
+         blur={3} 
+         far={20} 
          color="#000000" 
       />
     </>
