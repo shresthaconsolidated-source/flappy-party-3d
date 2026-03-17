@@ -23,13 +23,17 @@ export default class FlappyServer implements Server {
   }
 
   onClose(conn: Connection) {
+    // If they leave mid-game, mark them dead so the round can end for others
+    if (this.state.state === 'PLAYING' && this.state.players[conn.id]) {
+      this.state.players[conn.id].isAlive = false;
+      this.checkGameEnd();
+    }
+
     delete this.state.players[conn.id];
     
-    // If no players, reset game
+    // If no players left at all, reset game
     if (Object.keys(this.state.players).length === 0) {
       this.resetGame();
-    } else {
-        this.checkGameEnd();
     }
     
     this.broadcastState();
