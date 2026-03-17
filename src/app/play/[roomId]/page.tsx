@@ -4,7 +4,7 @@ import { useGameRoom } from "@/hooks/useGameRoom";
 import { GameScene } from "@/components/game/GameScene";
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
-import { Wifi, Trophy, ChevronRight, Bird as BirdIcon, LogOut, RotateCcw, Play } from "lucide-react";
+import { Wifi, Trophy, ChevronRight, Bird as BirdIcon, LogOut, RotateCcw, Play, Maximize, Minimize } from "lucide-react";
 
 export default function PlayerPage({ params }: { params: Promise<{ roomId: string }> }) {
   const { roomId } = use(params);
@@ -21,10 +21,17 @@ export default function PlayerPage({ params }: { params: Promise<{ roomId: strin
 
   const BIRD_COLORS = ["#f87171", "#38bdf8", "#4ade80", "#fbbf24", "#a78bfa", "#f472b6", "#ffffff"];
 
-  const toggleFullscreen = () => {
+  const toggleFullscreen = async () => {
     if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(() => {});
-        setIsFullscreen(true);
+        try {
+            await document.documentElement.requestFullscreen();
+            if (screen.orientation && (screen.orientation as any).lock) {
+                await (screen.orientation as any).lock('landscape').catch(() => {});
+            }
+            setIsFullscreen(true);
+        } catch (e) {
+            console.error("Fullscreen failed:", e);
+        }
     } else {
         document.exitFullscreen().catch(() => {});
         setIsFullscreen(false);
@@ -195,16 +202,36 @@ export default function PlayerPage({ params }: { params: Promise<{ roomId: strin
             </div>
             
             {/* Fullscreen Toggle */}
-            <button 
-                onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }}
-                className="pointer-events-auto bg-white/10 backdrop-blur-xl p-3 rounded-2xl border border-white/20 hover:bg-white/20 active:scale-90 transition-all"
-            >
-                {isFullscreen ? (
-                    <RotateCcw className="w-5 h-5 text-white/60" /> // Using rotate as a proxy for 'return/exit' if no specific icon
-                ) : (
-                    <Play className="w-5 h-5 text-white/60 rotate-90" /> // Using play rotated for 'expand'
+            <div className="relative group">
+                {!isFullscreen && (
+                    <div className="absolute -inset-1 bg-sky-500/30 rounded-2xl blur animate-pulse pointer-events-none" />
                 )}
-            </button>
+                <button 
+                    onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }}
+                    className={`relative pointer-events-auto backdrop-blur-xl p-3 rounded-2xl border transition-all active:scale-90 ${
+                        isFullscreen 
+                        ? 'bg-white/10 border-white/20 hover:bg-white/20' 
+                        : 'bg-sky-500 border-sky-400 shadow-[0_0_20px_rgba(56,189,248,0.4)] hover:bg-sky-400'
+                    }`}
+                >
+                    {isFullscreen ? (
+                        <Minimize className="w-5 h-5 text-white" />
+                    ) : (
+                        <div className="flex items-center gap-2 px-1">
+                            <Maximize className="w-5 h-5 text-white" />
+                            <span className="text-[10px] font-black text-white uppercase tracking-widest hidden sm:block">Full Screen</span>
+                        </div>
+                    )}
+                </button>
+                
+                {/* Visual Invitation (Click Gesture) */}
+                {!isFullscreen && (
+                    <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 pointer-events-none animate-bounce">
+                        <div className="bg-sky-500 text-white text-[8px] font-black py-1 px-3 rounded-full shadow-lg uppercase tracking-tighter italic">Tap for Landscape</div>
+                        <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-b-[6px] border-b-sky-500 mx-auto -mt-6 rotate-180" />
+                    </div>
+                )}
+            </div>
         </div>
 
         {/* Center Messages */}
