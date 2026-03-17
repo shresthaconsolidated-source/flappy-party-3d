@@ -17,26 +17,38 @@ export function Bird({ position, color, name, isLocal }: BirdProps) {
   const bodyRef = useRef<THREE.Mesh>(null);
   const wingRef = useRef<THREE.Mesh>(null);
 
-  useFrame((state) => {
+  useFrame((state, delta) => {
     if (meshRef.current) {
-        // Simple smoothing for position
-        meshRef.current.position.lerp(new THREE.Vector3(...position), 0.2);
-        
-        // Tilt based on vertical velocity
-        const velocity = (position[1] - meshRef.current.position.y);
-        const targetRotation = Math.min(Math.max(velocity * 8, -0.6), 0.6);
-        meshRef.current.rotation.z = THREE.MathUtils.lerp(meshRef.current.rotation.z, targetRotation, 0.1);
+        // Calculate velocity-based tilt
+        const currentY = meshRef.current.position.y;
+        const lastY = meshRef.current.userData.lastY ?? currentY;
+        const velocity = (currentY - lastY) / (delta || 1/60);
+        meshRef.current.userData.lastY = currentY;
 
-        // Squash and Stretch Logic
+        // Smoothly interpolate to target position
+        meshRef.current.position.y = THREE.MathUtils.lerp(meshRef.current.position.y, position[1], 0.3);
+
+        // Advanced Rotation: Tilt + Bank
+        // Tilt up when going up, down when falling
+        const targetRotationX = -velocity * 0.2;
+        meshRef.current.rotation.x = THREE.MathUtils.lerp(meshRef.current.rotation.x, targetRotationX, 0.15);
+        
+        // Add a subtle "banking" effect
+        const targetRotationZ = velocity * 0.1;
+        meshRef.current.rotation.z = THREE.MathUtils.lerp(meshRef.current.rotation.z, targetRotationZ, 0.1);
+
+        // Breathing animation
+        meshRef.current.position.y += Math.sin(state.clock.elapsedTime * 4) * 0.015;
+
+        // Squash and Stretch
         if (bodyRef.current) {
-            const squashFactor = Math.abs(velocity) * 2;
-            bodyRef.current.scale.set(
-                1 - squashFactor * 0.5, // Squash/Stretch X
-                1 + squashFactor,       // Squash/Stretch Y
-                1 - squashFactor * 0.5  // Squash/Stretch Z
-            );
-            // Decay scale back to 1
-            bodyRef.current.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
+            const squashAmount = Math.abs(velocity) * 0.5;
+            const targetScaleY = 1 + squashAmount;
+            const targetScaleXZ = 1 - squashAmount * 0.5;
+            
+            bodyRef.current.scale.y = THREE.MathUtils.lerp(bodyRef.current.scale.y, THREE.MathUtils.clamp(targetScaleY, 0.7, 1.4), 0.2);
+            bodyRef.current.scale.x = THREE.MathUtils.lerp(bodyRef.current.scale.x, THREE.MathUtils.clamp(targetScaleXZ, 0.8, 1.1), 0.2);
+            bodyRef.current.scale.z = THREE.MathUtils.lerp(bodyRef.current.scale.z, THREE.MathUtils.clamp(targetScaleXZ, 0.8, 1.1), 0.2);
         }
     }
     
@@ -66,7 +78,13 @@ export function Bird({ position, color, name, isLocal }: BirdProps) {
       {/* Bird Body */}
       <mesh ref={bodyRef} castShadow>
         <sphereGeometry args={[0.35, 64, 64]} />
-        <meshStandardMaterial color={color} roughness={0.1} metalness={0.4} />
+        <meshStandardMaterial 
+          color={color} 
+          roughness={0.05} 
+          metalness={0.6} 
+          emissive={color}
+          emissiveIntensity={isLocal ? 0.4 : 0.1}
+        />
       </mesh>
 
       {/* Eye - More detailed */}

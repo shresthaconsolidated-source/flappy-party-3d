@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { Bird } from "./Bird";
 import { Pipe } from "./Pipe";
 import { Environment } from "./Environment";
+import { Particles } from "./Particles";
 import type { RoomState, Player } from "../../types/game";
 
 interface GameSceneProps {
@@ -40,6 +41,8 @@ function GameLoop({ roomState, onFlap, onDie, localPlayerId, jumpTrigger, onUpda
   const targetYRef = useRef<Record<string, number>>({});
   const smoothedYRef = useRef<Record<string, number>>({});
   const [tick, setTick] = useState(0);
+  const [jumpKey, setJumpKey] = useState(0);
+  const [crashPos, setCrashPos] = useState<[number, number, number] | null>(null);
 
   useEffect(() => {
     if (roomState?.state === 'STARTING') {
@@ -51,6 +54,7 @@ function GameLoop({ roomState, onFlap, onDie, localPlayerId, jumpTrigger, onUpda
         passedPipesRef.current.clear();
         lastTimeRef.current = Date.now();
         setLocalY(0);
+        setCrashPos(null); // Reset crash position
     }
   }, [roomState?.state]);
 
@@ -58,6 +62,7 @@ function GameLoop({ roomState, onFlap, onDie, localPlayerId, jumpTrigger, onUpda
     if (roomState?.state === 'PLAYING' && isAliveRef.current) {
         const multiplier = getDifficultyMultiplier(scoreRef.current);
         velocityRef.current = BASE_JUMP_FORCE * multiplier;
+        setJumpKey(k => k + 1);
     }
   }, [roomState?.state]);
 
@@ -210,31 +215,65 @@ function GameLoop({ roomState, onFlap, onDie, localPlayerId, jumpTrigger, onUpda
         />
       )}
 
-      {/* Obstacles */}
-      {roomState?.obstacles.map(pipe => {
-        return (
+      {/* Particles */}
+      {jumpKey > 0 && (
+          <Particles 
+            key={`jump-${jumpKey}`} 
+            position={[BIRD_X, localY - 0.2, 0]} 
+            color="#ffffff" 
+            type="jump" 
+            count={12}
+          />
+      )}
+      {crashPos && (
+          <Particles 
+            position={crashPos} 
+            color="#ef4444" 
+            type="crash" 
+            count={50}
+          />
+      )}
+
+      {/* Pipes */}
+      {roomState?.obstacles.map(pipe => (
           <Pipe key={pipe.id} x={pipe.x - scrollXRef.current} gapY={pipe.gapY} />
-        );
-      })}
+      ))}
     </>
   );
 }
 
 export function GameScene(props: GameSceneProps) {
+    const score = props.roomState?.players[props.localPlayerId!]?.score || 0;
+    
     return (
-        <div className="w-full h-full bg-sky-400">
+        <div className="w-full h-full bg-slate-950 overflow-hidden relative">
             <Canvas shadows camera={{ position: [0, 0, 10], fov: 50 }}>
                 <Suspense fallback={null}>
                     <GameLoop {...props} />
                 </Suspense>
             </Canvas>
             
-            {/* HUD */}
-            <div className="absolute top-4 left-4 text-white font-bold text-2xl drop-shadow-md">
+            {/* HUD - Premium Glassmorphism */}
+            <div className="absolute top-10 left-10 pointer-events-none">
                 {props.roomState?.state === 'PLAYING' && (
-                    <div>Score: {Math.floor(props.roomState.players[props.localPlayerId!]?.score || 0)}</div>
+                    <div className="bg-white/10 backdrop-blur-3xl rounded-[2rem] p-6 shadow-2xl border border-white/20 animate-in fade-in zoom-in duration-500">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em] mb-1">Score</span>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-6xl font-black text-white tracking-tighter italic leading-none">
+                                    {Math.floor(score)}
+                                </span>
+                                <span className="text-xl font-black text-white/20 tracking-tighter italic leading-none">
+                                    PTS
+                                </span>
+                            </div>
+                        </div>
+                    </div>
                 )}
             </div>
+
+            {/* Vignette Overlay */}
+            <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_150px_rgba(0,0,0,0.5)]" />
         </div>
     );
 }
