@@ -56,6 +56,11 @@ export default class FlappyServer implements Server {
 
   onMessage(message: string, conn: Connection) {
     const data = JSON.parse(message) as ClientMessage;
+    
+    // Update activity timestamp for any message
+    if (this.state.players[conn.id]) {
+        this.state.players[conn.id].lastActive = Date.now();
+    }
 
     switch (data.type) {
       case 'JOIN':
@@ -66,14 +71,18 @@ export default class FlappyServer implements Server {
           highScore: 0,
           isAlive: true,
           color: `hsl(${Math.random() * 360}, 70%, 50%)`,
-          position: [0, 0, 0]
+          position: [0, 0, 0],
+          lastActive: Date.now()
         };
         
-        // Auto-start countdown if it's the first player and we are waiting
         if (Object.keys(this.state.players).length === 1 && this.state.state === 'WAITING') {
           this.startCountdown(15);
         }
         this.broadcastState();
+        break;
+
+      case 'HEARTBEAT':
+        // Activity already updated above
         break;
 
       case 'START_GAME':
@@ -234,6 +243,28 @@ export default class FlappyServer implements Server {
   }
 
   broadcastState() {
+    this.pruneInactivePlayers();
     this.party.broadcast(JSON.stringify({ type: 'STATE', state: this.state }));
+  }
+
+  pruneInactivePlayers() {
+    const now = Date.now();
+    const activeConnections = new Set([...this.party.getConnections()].map(c => c.id));
+    let changed = false;
+
+    for (const id in this.state.players) {
+        const player = this.state.players[id];
+        // Remove if: no socket connection OR inactive for > 30s
+        if (!activeConnections.has(id) || (now - player.lastActive > 30000)) {
+            console.log(`Pruning inactive/ghost player: ${player.name} (${id})`);
+            delete this.state.players[id];
+            changed = true;
+        }
+    }
+
+    if (changed && Object.keys(this.state.players).length === 0) {
+        this.resetGame();
+    }
+    return changed;
   }
 }

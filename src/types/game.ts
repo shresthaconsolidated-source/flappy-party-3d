@@ -8,6 +8,7 @@ export interface Player {
   isAlive: boolean;
   color: string;
   position: [number, number, number];
+  lastActive: number; // For AFK pruning
 }
 
 export interface Obstacle {
@@ -41,4 +42,5 @@ export type ClientMessage =
   | { type: 'START_GAME' }
   | { type: 'RESTART' }
   | { type: 'UPDATE_POSITION'; y: number }
-  | { type: 'EMOJI'; emoji: string };
+  | { type: 'EMOJI'; emoji: string }
+  | { type: 'HEARTBEAT' };
