@@ -179,26 +179,34 @@ export default function PlayerPage({ params }: { params: Promise<{ roomId: strin
       {/* Interface Layer */}
       <div className="absolute inset-0 z-10 flex flex-col pointer-events-none p-4 safe-area-inset">
         {/* Top HUD - Landscape Friendly */}
-        <div className="flex justify-between items-start w-full">
-            <div className="bg-white/5 backdrop-blur-2xl rounded-3xl p-3 border border-white/10 shadow-2xl min-w-[80px]">
-                <p className="text-[7px] font-black text-white/40 uppercase tracking-[0.3em] mb-1">Score</p>
-                <p className="text-2xl font-black text-white leading-none italic">{localPlayer?.score || 0}</p>
+        <div className="flex justify-between items-start w-full gap-4">
+            <div className="flex items-start gap-2">
+                <div className="bg-white/5 backdrop-blur-2xl rounded-2xl p-2 sm:p-3 border border-white/10 shadow-2xl min-w-[60px] sm:min-w-[80px]">
+                    <p className="text-[6px] sm:text-[7px] font-black text-white/40 uppercase tracking-[0.3em] mb-0 sm:mb-1">Score</p>
+                    <p className="text-lg sm:text-2xl font-black text-white leading-none italic">{localPlayer?.score || 0}</p>
+                </div>
+                
+                <div className="hidden sm:flex flex-col gap-1">
+                    <div className="bg-amber-400/10 backdrop-blur-2xl rounded-xl p-1.5 border border-amber-400/20 shadow-2xl flex items-center gap-2">
+                        <Trophy className="w-2.5 h-2.5 text-amber-400" />
+                        <div className="text-right">
+                            <p className="text-[5px] font-black text-amber-400/50 uppercase tracking-[0.2em]">Record</p>
+                            <p className="text-sm font-black text-amber-400 leading-none italic">{roomState.allTimeBest || 0}</p>
+                        </div>
+                    </div>
+                </div>
             </div>
-            
-            <div className="flex flex-col gap-2">
-                <div className="bg-amber-400/10 backdrop-blur-2xl rounded-2xl p-2 border border-amber-400/20 shadow-2xl flex items-center gap-2">
-                    <Trophy className="w-3 h-3 text-amber-400" />
-                    <div className="text-right">
-                        <p className="text-[6px] font-black text-amber-400/50 uppercase tracking-[0.2em]">Record</p>
-                        <p className="text-lg font-black text-amber-400 leading-none italic">{roomState.allTimeBest || 0}</p>
-                    </div>
-                </div>
-                <div className="bg-white/5 backdrop-blur-2xl rounded-2xl p-2 border border-white/10 flex items-center gap-2 opacity-60">
-                    <div className="text-right">
-                        <p className="text-[6px] font-black text-white/30 uppercase tracking-[0.2em]">PB</p>
-                        <p className="text-lg font-black text-white leading-none italic">{persistentBest}</p>
-                    </div>
-                </div>
+
+            {/* Compact Stats for Mobile Landscape */}
+            <div className="flex sm:hidden items-center gap-2 bg-black/20 backdrop-blur-xl px-3 py-1.5 rounded-full border border-white/10">
+                 <div className="flex items-center gap-1 border-r border-white/10 pr-2">
+                    <Trophy className="w-2.5 h-2.5 text-amber-400" />
+                    <span className="text-[10px] font-black text-amber-400">{roomState.allTimeBest || 0}</span>
+                 </div>
+                 <div className="flex items-center gap-1">
+                    <span className="text-[8px] font-black text-white/30 uppercase">PB</span>
+                    <span className="text-[10px] font-black text-white">{persistentBest}</span>
+                 </div>
             </div>
             
             {/* Fullscreen Toggle */}
@@ -359,18 +367,29 @@ export default function PlayerPage({ params }: { params: Promise<{ roomId: strin
         }
         @media (orientation: landscape) {
             .max-w-sm { 
-                max-width: 400px;
+                max-width: 450px;
                 margin: auto;
             }
-            h1 { font-size: 1.5rem !important; }
-            h2 { font-size: 1.2rem !important; }
-            .text-9xl { font-size: 4rem !important; }
-            .p-10 { padding: 1.5rem !important; }
-            .p-8 { padding: 1rem !important; }
-            .mb-8 { margin-bottom: 1rem !important; }
+        }
+        @media (max-height: 450px) and (orientation: landscape) {
+            .max-w-sm { 
+                max-width: 400px;
+                transform: scale(0.9);
+                transform-origin: center center;
+            }
+            h2 { font-size: 1.25rem !important; line-height: 1.2 !important; }
+            h3 { font-size: 1.1rem !important; }
+            .text-3xl { font-size: 1.5rem !important; }
+            .text-2xl { font-size: 1.25rem !important; }
+            .text-9xl { font-size: 5rem !important; }
+            .p-6 { padding: 1rem !important; }
+            .mb-10 { margin-bottom: 1rem !important; }
+            .mb-8 { margin-bottom: 0.75rem !important; }
             .mb-6 { margin-bottom: 0.5rem !important; }
-            input { padding: 0.75rem !important; font-size: 1rem !important; }
-            button { padding: 0.75rem !important; font-size: 1rem !important; }
+            .my-4 { margin-top: 0.5rem !important; margin-bottom: 0.5rem !important; }
+            .py-4 { padding-top: 0.75rem !important; padding-bottom: 0.75rem !important; }
+            .text-6xl { font-size: 3rem !important; }
+            .rounded-[2.5rem] { border-radius: 2rem !important; }
         }
       `}</style>
     </div>

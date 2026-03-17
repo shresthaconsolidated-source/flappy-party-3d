@@ -108,7 +108,7 @@ export default function HostPage({ params }: { params: Promise<{ roomId: string 
       </div>
 
       {/* Overlays */}
-      <div className="absolute inset-0 flex p-10 pointer-events-none">
+      <div className="absolute inset-0 flex flex-col md:flex-row p-4 md:p-10 pointer-events-none overflow-y-auto sm:overflow-hidden">
         {/* Left Side: Room Info & Players */}
         <div className="flex flex-col w-96 space-y-8 pointer-events-auto">
           <div className="bg-white/10 backdrop-blur-3xl rounded-[3rem] p-10 shadow-2xl border border-white/20">
@@ -240,6 +240,21 @@ export default function HostPage({ params }: { params: Promise<{ roomId: string 
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+
+        @media (max-height: 500px) and (orientation: landscape) {
+            .w-96 { width: 300px !important; }
+            .w-80 { width: 250px !important; }
+            .p-10 { padding: 1.25rem !important; }
+            .p-6 { padding: 1rem !important; }
+            .text-5xl { font-size: 2rem !important; }
+            .text-4xl { font-size: 1.5rem !important; }
+            .text-2xl { font-size: 1.1rem !important; }
+            .mb-8 { margin-bottom: 0.75rem !important; }
+            .space-y-8 { gap: 1rem !important; }
+            .space-y-6 { gap: 0.75rem !important; }
+            canvas { opacity: 0.3; } /* Lighten background scene to focus on UI on small screens */
+            .rounded-[3rem] { border-radius: 1.5rem !important; }
+        }
       `}</style>
     </div>
   );

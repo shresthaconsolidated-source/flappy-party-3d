@@ -21,8 +21,8 @@ export default function LandingPage() {
   };
 
   return (
-    <main className="min-h-screen bg-sky-400 flex flex-col items-center justify-center p-6 text-sky-900">
-      <div className="w-full max-w-2xl space-y-12 text-center">
+    <main className="min-h-screen bg-sky-400 flex flex-col items-center justify-center p-6 text-sky-900 overflow-y-auto scrollbar-hide">
+      <div className="w-full max-w-2xl my-auto space-y-8 sm:space-y-12 text-center py-8">
         {/* Logo Section */}
         <div className="relative inline-block">
           <div className="absolute -inset-4 bg-white/20 blur-3xl rounded-full"></div>
@@ -86,6 +86,20 @@ export default function LandingPage() {
           Built with React Three Fiber & PartyKit
         </div>
       </div>
+      <style jsx>{`
+        @media (max-height: 500px) and (orientation: landscape) {
+            .text-7xl { font-size: 3rem !important; }
+            .w-24.h-24 { width: 3rem !important; height: 3rem !important; margin-bottom: 0.5rem !important; }
+            .w-14.h-14 { width: 1.5rem !important; height: 1.5rem !important; }
+            h2 { font-size: 1.25rem !important; }
+            p { font-size: 0.75rem !important; margin-bottom: 0.5rem !important; }
+            .p-10 { padding: 1.5rem !important; border-radius: 2rem !important; }
+            .space-y-12 { gap: 1rem !important; }
+            .grid { gap: 1rem !important; }
+            button { padding: 0.75rem !important; font-size: 1.25rem !important; border-radius: 1.5rem !important; }
+            input { padding: 0.75rem !important; }
+        }
+      `}</style>
     </main>
   );
 }
