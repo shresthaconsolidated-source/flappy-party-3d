@@ -58,8 +58,8 @@ export function useGameRoom(roomId: string) {
     };
   }, [roomId]);
 
-  const join = useCallback((name: string) => {
-    socketRef.current?.send(JSON.stringify({ type: 'JOIN', name }));
+  const join = useCallback((name: string, color?: string) => {
+    socketRef.current?.send(JSON.stringify({ type: 'JOIN', name, color }));
   }, []);
 
   const flap = useCallback(() => {

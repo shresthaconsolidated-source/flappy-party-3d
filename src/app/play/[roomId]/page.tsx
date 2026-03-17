@@ -118,6 +118,21 @@ export default function PlayerPage({ params }: { params: Promise<{ roomId: strin
                 required
               />
             </div>
+            <div className="space-y-4">
+              <label className="block text-[8px] font-black text-white/40 uppercase tracking-[0.4em] mb-1 ml-4 text-center">Select Bird Color</label>
+              <div className="flex justify-center gap-3 flex-wrap">
+                {BIRD_COLORS.map(c => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setSelectedColor(c)}
+                    className={`w-8 h-8 rounded-full border-2 transition-all ${selectedColor === c ? 'scale-125 border-white' : 'border-transparent opacity-50 hover:opacity-100'}`}
+                    style={{ backgroundColor: c }}
+                  />
+                ))}
+              </div>
+            </div>
+
             <button
               type="submit"
               className="w-full bg-sky-500 hover:bg-sky-400 text-white font-black py-5 rounded-[2rem] shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3 text-xl italic tracking-tighter"

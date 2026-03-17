@@ -70,7 +70,7 @@ export default class FlappyServer implements Server {
           score: 0,
           highScore: 0,
           isAlive: true,
-          color: `hsl(${Math.random() * 360}, 70%, 50%)`,
+          color: data.color || `hsl(${Math.random() * 360}, 70%, 50%)`,
           position: [0, 0, 0],
           lastActive: Date.now()
         };

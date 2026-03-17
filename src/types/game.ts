@@ -35,7 +35,7 @@ export type ServerMessage =
   | { type: 'EMOJI'; emoji: string; playerId: string };
 
 export type ClientMessage =
-  | { type: 'JOIN'; name: string }
+  | { type: 'JOIN'; name: string; color?: string }
   | { type: 'FLAP' }
   | { type: 'DIE'; score: number }
   | { type: 'UPDATE_SCORE'; score: number }
