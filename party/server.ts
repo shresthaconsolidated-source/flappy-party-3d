@@ -25,13 +25,15 @@ export default class FlappyServer implements Server {
       this.party.storage.get<string>("allTimeBestHolder")
     ]);
 
-    if (savedScore !== undefined) {
-      console.log(`Loaded World Record: ${savedScore} by ${savedHolder}`);
-      this.state.allTimeBest = savedScore;
+    if (savedScore !== undefined && savedScore !== null) {
+      console.log(`[STORAGE] Loaded World Record: ${savedScore} by ${savedHolder}`);
+      this.state.allTimeBest = Number(savedScore);
       this.state.allTimeBestHolder = savedHolder || "Unknown";
       this.broadcastState(); // Sync record immediately on wake
     } else {
-      console.log("No World Record found in storage.");
+      console.log("[STORAGE] No World Record found in storage. Initializing to 0.");
+      this.state.allTimeBest = 0;
+      this.state.allTimeBestHolder = "None";
     }
 
     // Periodic pruning to remove "ghost" players even if no messages are sent
@@ -142,6 +144,7 @@ export default class FlappyServer implements Server {
           
           // Persistent All-Time Best
           if (data.score > (this.state.allTimeBest || 0)) {
+            console.log(`[RECORD] New World Record on DIE! ${data.score} by ${this.state.players[conn.id].name}`);
             this.state.allTimeBest = data.score;
             this.state.allTimeBestHolder = this.state.players[conn.id].name;
             this.party.storage.put("allTimeBest", data.score);
@@ -167,6 +170,15 @@ export default class FlappyServer implements Server {
       case 'UPDATE_SCORE':
         if (this.state.players[conn.id]) {
             this.state.players[conn.id].score = data.score;
+            
+            // Check for record on every score increment too
+            if (data.score > (this.state.allTimeBest || 0)) {
+                console.log(`[RECORD] New World Record on UPDATE! ${data.score} by ${this.state.players[conn.id].name}`);
+                this.state.allTimeBest = data.score;
+                this.state.allTimeBestHolder = this.state.players[conn.id].name;
+                this.party.storage.put("allTimeBest", data.score);
+                this.party.storage.put("allTimeBestHolder", this.state.allTimeBestHolder);
+            }
             this.broadcastState();
         }
         break;
