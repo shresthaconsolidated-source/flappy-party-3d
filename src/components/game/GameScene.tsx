@@ -18,29 +18,28 @@ interface GameSceneProps {
   jumpTrigger?: number;
   onUpdatePosition?: (y: number) => void;
   onScoreUpdate?: (score: number) => void;
+  playerPositions?: Record<string, number>;
   socket?: any;
 }
 
-const BASE_GRAVITY = -0.0009;
-const BASE_JUMP_FORCE = 0.04;
-const BASE_PIPE_SPEED = 0.02;
+const BASE_GRAVITY = -0.054; // Adjusted for delta (approx 1/60th of previous)
+const BASE_JUMP_FORCE = 2.4; // Adjusted for delta
+const BASE_PIPE_SPEED = 1.2;  // Adjusted for delta
 const BIRD_X = 0;
 
 function getDifficultyMultiplier(score: number) {
   return 1 + Math.floor(score / 10) * 0.15;
 }
 
-function GameLoop({ roomState, onFlap, onDie, localPlayerId, jumpTrigger, onUpdatePosition, onScoreUpdate, socket }: GameSceneProps) {
-  const [localY, setLocalY] = useState(0);
+function GameLoop({ roomState, onFlap, onDie, localPlayerId, jumpTrigger, onUpdatePosition, onScoreUpdate, playerPositions, socket }: GameSceneProps) {
+  const [localYState, setLocalYState] = useState(0); // Only for initial render or big jumps if needed
   const velocityRef = useRef(0);
   const positionYRef = useRef(0);
   const scoreRef = useRef(0);
   const isAliveRef = useRef(true);
   const scrollXRef = useRef(0);
   const passedPipesRef = useRef<Set<string>>(new Set());
-  const targetYRef = useRef<Record<string, number>>({});
   const smoothedYRef = useRef<Record<string, number>>({});
-  const [tick, setTick] = useState(0);
   const [jumpKey, setJumpKey] = useState(0);
   const [crashPos, setCrashPos] = useState<[number, number, number] | null>(null);
   const shakeRef = useRef(0);
@@ -75,7 +74,7 @@ function GameLoop({ roomState, onFlap, onDie, localPlayerId, jumpTrigger, onUpda
         isAliveRef.current = true;
         scrollXRef.current = 0;
         passedPipesRef.current.clear();
-        setLocalY(0);
+        setLocalYState(0);
         setCrashPos(null);
         shakeRef.current = 0;
         setFlash(0);
@@ -94,7 +93,7 @@ function GameLoop({ roomState, onFlap, onDie, localPlayerId, jumpTrigger, onUpda
   const jump = useCallback(() => {
     if (roomState?.state === 'PLAYING' && isAliveRef.current) {
         const multiplier = getDifficultyMultiplier(scoreRef.current);
-        velocityRef.current = BASE_JUMP_FORCE * multiplier;
+        velocityRef.current = BASE_JUMP_FORCE * multiplier * 0.016; // Normalize for jump impulse
         setJumpKey(k => k + 1);
         shakeRef.current = Math.max(shakeRef.current, 0.1);
     }
@@ -120,9 +119,11 @@ function GameLoop({ roomState, onFlap, onDie, localPlayerId, jumpTrigger, onUpda
   }, [handleInput]);
 
   useFrame((state, delta) => {
+    const d = Math.min(delta, 0.1); // Cap delta to prevent massive jumps on lag spike
+    
     // Decay juice
-    if (shakeRef.current > 0) shakeRef.current -= delta * 3;
-    if (flash > 0) setFlash(f => Math.max(0, f - delta * 4));
+    if (shakeRef.current > 0) shakeRef.current -= d * 3;
+    if (flash > 0) setFlash(f => Math.max(0, f - d * 4));
 
     // Apply Shake
     if (shakeRef.current > 0) {
@@ -141,13 +142,13 @@ function GameLoop({ roomState, onFlap, onDie, localPlayerId, jumpTrigger, onUpda
     const currentGravity = BASE_GRAVITY * multiplier;
 
     if (isPlayer && isAliveRef.current && isPlaying) {
-        velocityRef.current += currentGravity;
+        velocityRef.current += currentGravity * d;
         positionYRef.current += velocityRef.current;
         if (positionYRef.current < -4.65 || positionYRef.current > 4.65) triggerDeath();
     }
 
     if (isPlaying) {
-        scrollXRef.current += currentPipeSpeed * 60 * delta;
+        scrollXRef.current += currentPipeSpeed * d;
     }
 
     if (isPlayer && isAliveRef.current && isPlaying) {
@@ -164,12 +165,16 @@ function GameLoop({ roomState, onFlap, onDie, localPlayerId, jumpTrigger, onUpda
         });
     }
 
-    // Sync others
-    if (roomState) {
-        Object.values(roomState.players).forEach(p => {
-            if (p.id !== localPlayerId) {
-                targetYRef.current[p.id] = p.position[1];
-                smoothedYRef.current[p.id] = THREE.MathUtils.lerp(smoothedYRef.current[p.id] ?? p.position[1], targetYRef.current[p.id], 0.35);
+    // Sync others with lerp scaled by delta
+    if (playerPositions) {
+        Object.keys(playerPositions).forEach(id => {
+            if (id !== localPlayerId) {
+                const targetY = playerPositions[id];
+                smoothedYRef.current[id] = THREE.MathUtils.lerp(
+                    smoothedYRef.current[id] ?? targetY, 
+                    targetY, 
+                    1 - Math.exp(-15 * d) // Frame-rate independent lerp
+                );
             }
         });
     }
@@ -178,22 +183,37 @@ function GameLoop({ roomState, onFlap, onDie, localPlayerId, jumpTrigger, onUpda
     if (!isPlayer && isPlaying) {
         const aliveBirds = Object.values(roomState?.players || {}).filter(p => p.isAlive);
         if (aliveBirds.length > 0) {
-            const avgY = aliveBirds.reduce((acc, p) => acc + (p.id === localPlayerId ? positionYRef.current : (smoothedYRef.current[p.id] || 0)), 0) / aliveBirds.length;
+            const avgY = aliveBirds.reduce((acc, p) => {
+                const y = p.id === localPlayerId ? positionYRef.current : (smoothedYRef.current[p.id] || 0);
+                return acc + y;
+            }, 0) / aliveBirds.length;
+            
             const targetCamY = Math.min(Math.max(avgY * 0.5, -2), 2);
-            state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, targetCamY, 0.05);
+            state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, targetCamY, 1 - Math.exp(-3 * d));
         }
         state.camera.lookAt(2, 0, 0);
     }
 
-    if (isPlayer && isAliveRef.current) setLocalY(positionYRef.current);
-    else setTick(t => t + 1);
+    if (isPlayer && isAliveRef.current) {
+        if (Math.abs(localYState - positionYRef.current) > 0.01) {
+            setLocalYState(positionYRef.current);
+        }
+    }
   });
 
   useEffect(() => {
     if (roomState?.state !== 'PLAYING' || !isAliveRef.current || !onUpdatePosition) return;
-    const interval = setInterval(() => onUpdatePosition(positionYRef.current), 100);
+    const interval = setInterval(() => {
+        onUpdatePosition(positionYRef.current);
+    }, 32); // Sync at ~30fps for balance between smoothness and bandwidth
     return () => clearInterval(interval);
   }, [roomState?.state, onUpdatePosition]);
+
+  const pipes = useMemo(() => {
+    return roomState?.obstacles.map(pipe => (
+        <Pipe key={pipe.id} x={pipe.x - scrollXRef.current} gapY={pipe.gapY} />
+    )) || [];
+  }, [roomState?.obstacles]);
 
   return (
     <>
@@ -216,7 +236,7 @@ function GameLoop({ roomState, onFlap, onDie, localPlayerId, jumpTrigger, onUpda
       {/* Local */}
       {roomState?.players[localPlayerId || '']?.isAlive && (
         <Bird 
-          position={[BIRD_X, localY, 0]} 
+          position={[BIRD_X, localYState, 0]} 
           color={roomState.players[localPlayerId!].color} 
           name={roomState.players[localPlayerId!].name}
           score={roomState.players[localPlayerId!].score}
@@ -235,7 +255,7 @@ function GameLoop({ roomState, onFlap, onDie, localPlayerId, jumpTrigger, onUpda
         );
       })}
 
-      <Particles key={`j-${jumpKey}`} position={[BIRD_X, localY, 0]} color="#fff" type="jump" count={10} />
+      <Particles key={`j-${jumpKey}`} position={[BIRD_X, localYState, 0]} color="#fff" type="jump" count={10} />
       {crashPos && <Particles position={crashPos} color="#f00" type="crash" count={40} />}
       {roomState?.obstacles.map(pipe => <Pipe key={pipe.id} x={pipe.x - scrollXRef.current} gapY={pipe.gapY} />)}
     </>

@@ -120,21 +120,25 @@ export function Environment() {
   const bgColor = useRef(new THREE.Color('#7dd3fc'));
   const fogColor = useRef(new THREE.Color('#bae6fd'));
 
-  useFrame((state) => {
+  useFrame((state, delta) => {
     const time = state.clock.elapsedTime;
+    const d = Math.min(delta, 0.1);
     
-    // Scroll scenery at different speeds for parallax
-    if (sceneryRef.current) sceneryRef.current.position.x = -(time * 0.5) % 40;
-    if (hillsRef.current) hillsRef.current.position.x = -(time * 1.2) % 40;
+    // Scroll scenery at different speeds for parallax (now using delta)
+    if (sceneryRef.current) sceneryRef.current.position.x = (sceneryRef.current.position.x - d * 30 * 0.5) % 40;
+    if (hillsRef.current) hillsRef.current.position.x = (hillsRef.current.position.x - d * 30 * 1.2) % 40;
     
     if (floorRef.current) {
         const material = floorRef.current.material as THREE.MeshStandardMaterial;
-        if (material.map) material.map.offset.x += 0.005;
+        if (material.map) material.map.offset.x += 0.3 * d;
     }
 
     const cycle = (time % 120) / 120;
-    bgColor.current.lerpColors(new THREE.Color('#7dd3fc'), new THREE.Color('#0f172a'), Math.sin(cycle * Math.PI));
-    fogColor.current.lerpColors(new THREE.Color('#bae6fd'), new THREE.Color('#1e293b'), Math.sin(cycle * Math.PI));
+    const targetBgColor = new THREE.Color('#7dd3fc').lerp(new THREE.Color('#0f172a'), Math.sin(cycle * Math.PI));
+    const targetFogColor = new THREE.Color('#bae6fd').lerp(new THREE.Color('#1e293b'), Math.sin(cycle * Math.PI));
+
+    bgColor.current.lerp(targetBgColor, 1 - Math.exp(-1 * d));
+    fogColor.current.lerp(targetFogColor, 1 - Math.exp(-1 * d));
   });
 
   return (
