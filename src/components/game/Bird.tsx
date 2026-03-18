@@ -28,29 +28,28 @@ export function Bird({ position, color, name, isLocal, score = 0 }: BirdProps) {
   const rank = getRank(score);
 
   useFrame((state, delta) => {
-    const d = Math.min(delta, 0.1);
     if (meshRef.current) {
         const currentY = meshRef.current.position.y;
         const lastY = meshRef.current.userData.lastY ?? currentY;
-        const velocity = (currentY - lastY) / (d || 1/60);
+        const velocity = (currentY - lastY) / (delta || 1/60);
         meshRef.current.userData.lastY = currentY;
 
-        meshRef.current.position.y = THREE.MathUtils.lerp(meshRef.current.position.y, position[1], 1 - Math.exp(-15 * d));
+        meshRef.current.position.y = THREE.MathUtils.lerp(meshRef.current.position.y, position[1], 0.3);
 
         // Tilt based on velocity (Juice)
         const targetRotationX = -velocity * 0.3;
-        meshRef.current.rotation.x = THREE.MathUtils.lerp(meshRef.current.rotation.x, targetRotationX, 1 - Math.exp(-8 * d));
+        meshRef.current.rotation.x = THREE.MathUtils.lerp(meshRef.current.rotation.x, targetRotationX, 0.15);
         
         const targetRotationZ = velocity * 0.1;
-        meshRef.current.rotation.z = THREE.MathUtils.lerp(meshRef.current.rotation.z, targetRotationZ, 1 - Math.exp(-5 * d));
+        meshRef.current.rotation.z = THREE.MathUtils.lerp(meshRef.current.rotation.z, targetRotationZ, 0.1);
 
         meshRef.current.position.y += Math.sin(state.clock.elapsedTime * 4) * 0.015;
 
         // Squash and Stretch
         if (bodyRef.current) {
             const squashAmount = Math.abs(velocity) * 0.5;
-            bodyRef.current.scale.y = THREE.MathUtils.lerp(bodyRef.current.scale.y, THREE.MathUtils.clamp(1 + squashAmount, 0.7, 1.4), 1 - Math.exp(-10 * d));
-            bodyRef.current.scale.x = bodyRef.current.scale.z = THREE.MathUtils.lerp(bodyRef.current.scale.x, THREE.MathUtils.clamp(1 - squashAmount * 0.5, 0.8, 1.1), 1 - Math.exp(-10 * d));
+            bodyRef.current.scale.y = THREE.MathUtils.lerp(bodyRef.current.scale.y, THREE.MathUtils.clamp(1 + squashAmount, 0.7, 1.4), 0.2);
+            bodyRef.current.scale.x = bodyRef.current.scale.z = THREE.MathUtils.lerp(bodyRef.current.scale.x, THREE.MathUtils.clamp(1 - squashAmount * 0.5, 0.8, 1.1), 0.2);
         }
     }
     

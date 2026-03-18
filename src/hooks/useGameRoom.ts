@@ -16,7 +16,6 @@ const getPartyHost = () => {
 export function useGameRoom(roomId: string) {
   const [roomState, setRoomState] = useState<RoomState | null>(null);
   const socketRef = useRef<PartySocket | null>(null);
-  const playerPositionsRef = useRef<Record<string, number>>({});
 
   useEffect(() => {
     const socket = new PartySocket({
@@ -28,16 +27,21 @@ export function useGameRoom(roomId: string) {
       const message = JSON.parse(event.data) as ServerMessage;
       
       if (message.type === 'STATE' || (message as any).type === 'STATE_UPDATE') {
-        const state = (message as any).state || (message as any).roomState;
-        setRoomState(state);
-        // Sync initial positions
-        if (state?.players) {
-            Object.values(state.players).forEach((p: any) => {
-                playerPositionsRef.current[p.id] = p.position[1];
-            });
-        }
+        setRoomState((message as any).state || (message as any).roomState);
       } else if (message.type === 'PLAYER_MOVED') {
-        playerPositionsRef.current[message.id] = message.y;
+        setRoomState(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            players: {
+              ...prev.players,
+              [message.id]: {
+                ...prev.players[message.id],
+                position: [prev.players[message.id]?.position[0] || 0, message.y, 0]
+              }
+            }
+          };
+        });
       }
     };
 
@@ -91,7 +95,6 @@ export function useGameRoom(roomId: string) {
     restart,
     updatePosition,
     updateScore,
-    playerPositions: playerPositionsRef.current,
     socket: socketRef.current
   };
 }

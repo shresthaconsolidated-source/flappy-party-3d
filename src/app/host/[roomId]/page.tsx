@@ -8,7 +8,7 @@ import { Users, Trophy } from "lucide-react";
 
 export default function HostPage({ params }: { params: Promise<{ roomId: string }> }) {
   const { roomId } = use(params);
-  const { roomState, updatePosition, playerPositions, socket } = useGameRoom(roomId);
+  const { roomState, updatePosition, socket } = useGameRoom(roomId);
   const [origin, setOrigin] = useState("");
   const [isLocalhost, setIsLocalhost] = useState(false);
   const [password, setPassword] = useState("");
@@ -104,7 +104,7 @@ export default function HostPage({ params }: { params: Promise<{ roomId: string 
     <div className="relative w-screen h-screen overflow-hidden bg-sky-900">
       {/* 3D View */}
       <div className="absolute inset-0">
-        <GameScene roomState={roomState} onUpdatePosition={updatePosition} playerPositions={playerPositions} socket={socket} />
+        <GameScene roomState={roomState} onUpdatePosition={updatePosition} socket={socket} />
       </div>
 
       {/* Overlays */}
