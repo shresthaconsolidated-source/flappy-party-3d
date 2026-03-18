@@ -1,9 +1,13 @@
 import type { Party, Request, Server, Connection } from "partykit/server";
+import { createClient } from "@supabase/supabase-js";
 import type { RoomState, ClientMessage, ServerMessage, Player, Obstacle } from "../src/types/game";
+
+const SUPABASE_URL = "https://cpcirugoynyevdbpuptt.supabase.co";
+const SUPABASE_KEY = "sb_publishable_M_7zrJA0hyBjW0bbaPnEWQ_ky_Eiawp";
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const OBSTACLE_SPACING = 5;
 const INITIAL_OBSTACLE_X = 4; // Approx 3 seconds delay at current speed
-const GLOBAL_STATS_ROOM = "global-stats";
 
 export default class FlappyServer implements Server {
   state: RoomState;
@@ -21,42 +25,27 @@ export default class FlappyServer implements Server {
   }
 
   async onStart() {
-    // If this IS the global stats room, load from its own local storage
-    if (this.party.id === GLOBAL_STATS_ROOM) {
-      console.log(`[GLOBAL STORAGE] Initializing Global Stats Room: ${this.party.id}`);
-      const [savedScore, savedHolder] = await Promise.all([
-        this.party.storage.get<number>("allTimeBest"),
-        this.party.storage.get<string>("allTimeBestHolder")
-      ]);
-      if (savedScore !== undefined && savedScore !== null) {
-        console.log(`[GLOBAL STORAGE] Loaded World Record from Local Storage: ${savedScore} by ${savedHolder}`);
-        this.state.allTimeBest = Number(savedScore);
-        this.state.allTimeBestHolder = savedHolder || "None";
-      }
-      this.broadcastState();
-    } else {
-      // Load from Global Stats Room instead of local room storage
-      try {
-        const statsRoom = this.party.context.parties.main.get(GLOBAL_STATS_ROOM);
-        const res = await statsRoom.fetch("/get-stats", {
-          method: "GET"
-        });
+    // Load from Supabase instead of local or internal room storage
+    try {
+      const { data, error } = await supabase
+        .from('global_stats')
+        .select('score, holder')
+        .eq('id', 1)
+        .single();
 
-        if (res.ok) {
-          const data = await res.json() as any;
-          if (data.score !== undefined && data.score !== null) {
-            console.log(`[GLOBAL FETCH] Loaded World Record for ${this.party.id}: ${data.score} by ${data.holder}`);
-            this.state.allTimeBest = Number(data.score);
-            this.state.allTimeBestHolder = data.holder || "None";
-          }
-        } else {
-          console.log(`[GLOBAL FETCH] No Global Record found for ${this.party.id}. status: ${res.status}`);
-        }
+      if (error) {
+        console.error("[SUPABASE] Error fetching global record:", error);
+      } else if (data) {
+        console.log(`[SUPABASE] Loaded World Record: ${data.score} by ${data.holder}`);
+        this.state.allTimeBest = Number(data.score);
+        this.state.allTimeBestHolder = data.holder || "None";
         this.broadcastState();
-      } catch (err) {
-        console.error(`[GLOBAL FETCH] Failed to load global record for ${this.party.id}:`, err);
       }
+    } catch (err) {
+      console.error("[SUPABASE] Unexpected error loading global record:", err);
     }
+
+    // Periodic pruning to remove "ghost" players even if no messages are sent
 
     // Periodic pruning to remove "ghost" players even if no messages are sent
     setInterval(() => {
@@ -170,13 +159,14 @@ export default class FlappyServer implements Server {
             this.state.allTimeBest = data.score;
             this.state.allTimeBestHolder = this.state.players[conn.id].name;
             
-            // Update Global Room Storage via fetch
-            const statsRoom = this.party.context.parties.main.get(GLOBAL_STATS_ROOM);
-            statsRoom.fetch("/put-stats", {
-                method: "POST",
-                body: JSON.stringify({ score: data.score, holder: this.state.allTimeBestHolder }),
-                headers: { "Content-Type": "application/json" }
-            }).catch(err => console.error("Failed to update global stats:", err));
+            // Update Supabase on new World Record
+            supabase.from('global_stats')
+                .update({ score: data.score, holder: this.state.allTimeBestHolder })
+                .eq('id', 1)
+                .then(({ error }) => {
+                    if (error) console.error("[SUPABASE] Update failed:", error);
+                    else console.log("[SUPABASE] World Record updated!");
+                });
           }
 
           this.broadcastState();
@@ -205,13 +195,14 @@ export default class FlappyServer implements Server {
                 this.state.allTimeBest = data.score;
                 this.state.allTimeBestHolder = this.state.players[conn.id].name;
                 
-                // Update Global Room Storage via fetch
-                const statsRoom = this.party.context.parties.main.get(GLOBAL_STATS_ROOM);
-                statsRoom.fetch("/put-stats", {
-                    method: "POST",
-                    body: JSON.stringify({ score: data.score, holder: this.state.allTimeBestHolder }),
-                    headers: { "Content-Type": "application/json" }
-                }).catch(err => console.error("Failed to update global stats:", err));
+                // Update Supabase on new World Record
+                supabase.from('global_stats')
+                    .update({ score: data.score, holder: this.state.allTimeBestHolder })
+                    .eq('id', 1)
+                    .then(({ error }) => {
+                        if (error) console.error("[SUPABASE] Update failed:", error);
+                        else console.log("[SUPABASE] World Record updated!");
+                    });
             }
             this.broadcastState();
         }
@@ -359,37 +350,6 @@ export default class FlappyServer implements Server {
   }
 
   async onRequest(req: Request) {
-    if (this.party.id !== GLOBAL_STATS_ROOM) {
-        return new Response("Not a stats room", { status: 404 });
-    }
-
-    const url = new URL(req.url);
-    if (url.pathname === "/get-stats") {
-        const [score, holder] = await Promise.all([
-            this.party.storage.get<number>("allTimeBest"),
-            this.party.storage.get<string>("allTimeBestHolder")
-        ]);
-        console.log(`[REQUEST] Providing Global Stats: ${score} by ${holder}`);
-        return new Response(JSON.stringify({ score, holder }), {
-            headers: { "Content-Type": "application/json" }
-        });
-    }
-
-    if (url.pathname === "/put-stats" && req.method === "POST") {
-        const { score, holder } = await req.json() as any;
-        const currentScore = await this.party.storage.get<number>("allTimeBest") || 0;
-        console.log(`[REQUEST] Attempting Global Stats Update: ${score} (Current: ${currentScore}) by ${holder}`);
-        if (score > currentScore) {
-            await Promise.all([
-                this.party.storage.put("allTimeBest", score),
-                this.party.storage.put("allTimeBestHolder", holder)
-            ]);
-            console.log(`[REQUEST] Global Stats Updated: ${score} by ${holder}`);
-            return new Response("OK");
-        }
-        return new Response("No update needed");
-    }
-
-    return new Response("Not found", { status: 404 });
+    return new Response("OK", { status: 200 });
   }
 }
