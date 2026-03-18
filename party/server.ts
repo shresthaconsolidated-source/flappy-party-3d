@@ -21,30 +21,41 @@ export default class FlappyServer implements Server {
   }
 
   async onStart() {
-    // Load from Global Stats Room instead of local room storage
-    try {
-      const statsRoom = this.party.context.parties.main.get(GLOBAL_STATS_ROOM);
-      const res = await statsRoom.fetch("/get-stats", {
-        method: "GET"
-      });
-
-      if (res.ok) {
-        const data = await res.json() as any;
-        if (data.score !== undefined && data.score !== null) {
-          console.log(`[GLOBAL STORAGE] Loaded World Record: ${data.score} by ${data.holder}`);
-          this.state.allTimeBest = Number(data.score);
-          this.state.allTimeBestHolder = data.holder || "None";
-        }
-      } else {
-        console.log("[GLOBAL STORAGE] No Global Record found. Initializing to 0.");
-        this.state.allTimeBest = 0;
-        this.state.allTimeBestHolder = "None";
+    // If this IS the global stats room, load from its own local storage
+    if (this.party.id === GLOBAL_STATS_ROOM) {
+      console.log(`[GLOBAL STORAGE] Initializing Global Stats Room: ${this.party.id}`);
+      const [savedScore, savedHolder] = await Promise.all([
+        this.party.storage.get<number>("allTimeBest"),
+        this.party.storage.get<string>("allTimeBestHolder")
+      ]);
+      if (savedScore !== undefined && savedScore !== null) {
+        console.log(`[GLOBAL STORAGE] Loaded World Record from Local Storage: ${savedScore} by ${savedHolder}`);
+        this.state.allTimeBest = Number(savedScore);
+        this.state.allTimeBestHolder = savedHolder || "None";
       }
       this.broadcastState();
-    } catch (err) {
-      console.error("[GLOBAL STORAGE] Failed to load global record:", err);
-      this.state.allTimeBest = 0;
-      this.state.allTimeBestHolder = "None";
+    } else {
+      // Load from Global Stats Room instead of local room storage
+      try {
+        const statsRoom = this.party.context.parties.main.get(GLOBAL_STATS_ROOM);
+        const res = await statsRoom.fetch("/get-stats", {
+          method: "GET"
+        });
+
+        if (res.ok) {
+          const data = await res.json() as any;
+          if (data.score !== undefined && data.score !== null) {
+            console.log(`[GLOBAL FETCH] Loaded World Record for ${this.party.id}: ${data.score} by ${data.holder}`);
+            this.state.allTimeBest = Number(data.score);
+            this.state.allTimeBestHolder = data.holder || "None";
+          }
+        } else {
+          console.log(`[GLOBAL FETCH] No Global Record found for ${this.party.id}. status: ${res.status}`);
+        }
+        this.broadcastState();
+      } catch (err) {
+        console.error(`[GLOBAL FETCH] Failed to load global record for ${this.party.id}:`, err);
+      }
     }
 
     // Periodic pruning to remove "ghost" players even if no messages are sent
@@ -358,6 +369,7 @@ export default class FlappyServer implements Server {
             this.party.storage.get<number>("allTimeBest"),
             this.party.storage.get<string>("allTimeBestHolder")
         ]);
+        console.log(`[REQUEST] Providing Global Stats: ${score} by ${holder}`);
         return new Response(JSON.stringify({ score, holder }), {
             headers: { "Content-Type": "application/json" }
         });
@@ -366,11 +378,13 @@ export default class FlappyServer implements Server {
     if (url.pathname === "/put-stats" && req.method === "POST") {
         const { score, holder } = await req.json() as any;
         const currentScore = await this.party.storage.get<number>("allTimeBest") || 0;
+        console.log(`[REQUEST] Attempting Global Stats Update: ${score} (Current: ${currentScore}) by ${holder}`);
         if (score > currentScore) {
             await Promise.all([
                 this.party.storage.put("allTimeBest", score),
                 this.party.storage.put("allTimeBestHolder", holder)
             ]);
+            console.log(`[REQUEST] Global Stats Updated: ${score} by ${holder}`);
             return new Response("OK");
         }
         return new Response("No update needed");
