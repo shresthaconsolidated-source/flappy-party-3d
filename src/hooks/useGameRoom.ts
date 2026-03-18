@@ -50,7 +50,7 @@ export function useGameRoom(roomId: string) {
     // Heartbeat to keep session alive even if just watching
     const heartbeat = setInterval(() => {
         socket.send(JSON.stringify({ type: 'HEARTBEAT' }));
-    }, 10000);
+    }, 3000);
 
     return () => {
       clearInterval(heartbeat);

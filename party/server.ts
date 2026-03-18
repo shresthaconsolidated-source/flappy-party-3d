@@ -333,8 +333,8 @@ export default class FlappyServer implements Server {
 
     for (const id in this.state.players) {
         const player = this.state.players[id];
-        // Remove if: no socket connection OR inactive for > 5s
-        if (!activeConnections.has(id) || (now - player.lastActive > 5000)) {
+        // Remove if: no socket connection OR inactive for > 15s
+        if (!activeConnections.has(id) || (now - player.lastActive > 15000)) {
             console.log(`Pruning inactive/ghost player: ${player.name} (${id})`);
             delete this.state.players[id];
             changed = true;

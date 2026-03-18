@@ -205,9 +205,9 @@ function GameLoop({ roomState, onFlap, onDie, localPlayerId, jumpTrigger, onUpda
         // 1. It's not us (handled below)
         // 2. The game is active (PLAYING or STARTING)
         // 3. They are alive
-        // 4. They've been active in the last 10 seconds (to avoid ghosts)
+        // 4. They've been active in the last 15 seconds (to avoid ghosts)
         const isGameStarted = roomState.state === 'PLAYING' || roomState.state === 'STARTING';
-        const isActive = (Date.now() - player.lastActive) < 10000;
+        const isActive = (Date.now() - player.lastActive) < 15000;
 
         if (player.id === localPlayerId || !player.isAlive || !isGameStarted || !isActive) return null;
         return (
